@@ -8,7 +8,7 @@ import 'device_scan_screen.dart';
 // Analogía: Es un Row/Wrap donde cada Container es un PC.
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+  const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {

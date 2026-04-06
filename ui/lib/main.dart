@@ -24,7 +24,7 @@ void main() {
 }
 
 class ApliArteSwitchApp extends StatelessWidget {
-  const ApliArteSwitchApp({Key? key}) : super(key: key);
+  const ApliArteSwitchApp({super.key});
 
   @override
   Widget build(BuildContext context) {

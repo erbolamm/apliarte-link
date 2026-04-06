@@ -58,7 +58,7 @@ class IpcService {
     }
     
     // Escribimos un JSON entero con salto de línea (JSON Lines)
-    final data = jsonEncode(command) + '\n';
+    final data = '${jsonEncode(command)}\n';
     _socket!.write(data);
   }
 
