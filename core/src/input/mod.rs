@@ -155,18 +155,18 @@ pub async fn serve(mut event_rx: Receiver<InputEvent>, cfg: AppConfig) -> Result
     }
 
     // ── Linux: solo modo RECEIVER ──────────────────────────────────────────
-    while let Some(event) = event_rx.recv().await {
-        tracing::debug!("← Red: inyectando {:?}", event);
-
-        #[cfg(target_os = "linux")]
-        if let Err(e) = linux::inject(event).await {
-            tracing::error!("Inyección Linux fallida: {}", e);
+    #[cfg(target_os = "linux")]
+    {
+        while let Some(event) = event_rx.recv().await {
+            tracing::debug!("← Red: inyectando {:?}", event);
+            if let Err(e) = linux::inject(event).await {
+                tracing::error!("Inyección Linux fallida: {}", e);
+            }
         }
-
-        #[cfg(not(target_os = "linux"))]
-        let _ = event;
+        return Ok(());
     }
 
+    #[allow(unreachable_code)]
     Ok(())
 }
 
