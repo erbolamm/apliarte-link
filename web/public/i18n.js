@@ -11,7 +11,7 @@ const I18N = {
     'hero.lead': 'ApliArte Link es un KVM virtual por red local. Mueve el ratón al borde de la pantalla y salta al siguiente PC. Sin cables, sin dongles, sin hardware extra.',
     'hero.cta': 'Descargar gratis',
     'hero.github': 'Ver en GitHub',
-    'hero.opensource': '🆓 Gratis · Open source',
+    'hero.opensource': '🆓 Gratis',
     'hero.noads': '🚫 Sin publicidad',
     'hero.privacy': '🔒 Tráfico cifrado (DTLS)',
     'hero.diagram': 'Un solo teclado y ratón controla los tres',
@@ -46,7 +46,7 @@ const I18N = {
     'download.post.desc': 'Abre la app de configuración para añadir los otros PCs.',
 
     'promise.title': 'Hoy: gratis, sin publicidad, sin suscripción',
-    'promise.body': 'ApliArte Link es gratis y código abierto. Mientras haya apoyo de la comunidad, seguirá siendo así. <strong>Si hay apoyo, no habrá publicidad ni suscripción.</strong> Es un compromiso, no una promesa de marketing.',
+    'promise.body': 'ApliArte Link es gratis. Mientras haya apoyo de la comunidad, seguirá siendo así. <strong>Si hay apoyo, no habrá publicidad ni suscripción.</strong> Es un compromiso, no una promesa de marketing.',
     'promise.cta': 'Cómo puedes apoyar',
 
     'support.title': '💖 Apoya el proyecto',
@@ -112,7 +112,7 @@ const I18N = {
     'share.title': '💥 Compártelo',
     'share.lead': 'Si te ahorra cables, tiempo o dolores de cabeza, compártelo. Así llega a más gente.',
 
-    'footer.tagline': 'KVM virtual por red local. Open source y gratis.',
+    'footer.tagline': 'KVM virtual por red local. Gratis.',
     'footer.product': 'Producto',
     'footer.community': 'Comunidad',
     'footer.author': 'Autor',
@@ -135,7 +135,7 @@ const I18N = {
     'hero.lead': 'ApliArte Link is a virtual KVM over your local network. Move your mouse to the screen edge and jump to the next PC. No cables, no dongles, no extra hardware.',
     'hero.cta': 'Download free',
     'hero.github': 'View on GitHub',
-    'hero.opensource': '🆓 Free · Open source',
+    'hero.opensource': '🆓 Free',
     'hero.noads': '🚫 No ads',
     'hero.privacy': '🔒 Encrypted traffic (DTLS)',
     'hero.diagram': 'One keyboard and mouse controls all three',
@@ -170,7 +170,7 @@ const I18N = {
     'download.post.desc': 'Open the configuration app to add the other PCs.',
 
     'promise.title': 'Today: free, no ads, no subscription',
-    'promise.body': 'ApliArte Link is free and open source. As long as there is community support, it will stay that way. <strong>If there is support, there will be no ads or subscription.</strong> A commitment, not a marketing promise.',
+    'promise.body': 'ApliArte Link is free. As long as there is community support, it will stay that way. <strong>If there is support, there will be no ads or subscription.</strong> A commitment, not a marketing promise.',
     'promise.cta': 'How you can support',
 
     'support.title': '💖 Support the project',
@@ -236,7 +236,7 @@ const I18N = {
     'share.title': '💥 Share it',
     'share.lead': 'If it saves you cables, time, or headaches, share it. That way it reaches more people.',
 
-    'footer.tagline': 'Virtual KVM over local network. Open source and free.',
+    'footer.tagline': 'Virtual KVM over local network. Free.',
     'footer.product': 'Product',
     'footer.community': 'Community',
     'footer.author': 'Author',
