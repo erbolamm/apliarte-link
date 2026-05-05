@@ -13,20 +13,34 @@
 //              Captura input y envía paquetes UDP
 //   - RECEIVER: los otros PCs
 //                Recibe paquetes UDP e inyecta el input en su SO
+//
+// Cambios en Phase 4 (task 4.1/4.2):
+//   - serve() acepta Arc<UdpSocket> y SharedState (ya no crea su propio socket)
+//   - Cada recv_from exitoso actualiza state.last_peer y resetea consecutive_send_failures
+//   - send_event acepta &Arc<UdpSocket> en vez de &UdpSocket
+//   - Se quita #[allow(dead_code)] de send_event
 
-use crate::config::AppConfig;
 use crate::input::protocol::InputEvent;
+use crate::input::state::SharedState;
 use anyhow::Result;
+use std::sync::Arc;
 use tokio::net::UdpSocket;
 use tokio::sync::mpsc::Sender;
 
 /// Arranca el servidor de red.
-/// Javier: Es como initState() del módulo de red — abre el socket
-/// y se queda escuchando paquetes de otros PCs.
-pub async fn serve(event_tx: Sender<InputEvent>, cfg: AppConfig) -> Result<()> {
-    let addr = format!("0.0.0.0:{}", cfg.network.port);
-    let socket = UdpSocket::bind(&addr).await?;
-    tracing::info!("📡 Servidor UDP escuchando en {}", addr);
+/// Javier: Es como initState() del módulo de red — recibe el socket UDP compartido
+/// creado en main.rs y se queda escuchando paquetes de otros PCs.
+///
+/// Cambio respecto a la versión anterior:
+///   - Ya NO crea su propio socket (main.rs lo crea como Arc<UdpSocket> compartido)
+///   - Actualiza state.last_peer con la IP del último PC que nos mandó datos
+///   - Resetea consecutive_send_failures al recibir un paquete válido (señal de vida del peer)
+pub async fn serve(
+    event_tx: Sender<InputEvent>,
+    socket: Arc<UdpSocket>,
+    state: SharedState,
+) -> Result<()> {
+    tracing::info!("📡 Servidor UDP escuchando en {}", socket.local_addr()?);
 
     let mut buf = vec![0u8; 4096];
 
@@ -40,6 +54,15 @@ pub async fn serve(event_tx: Sender<InputEvent>, cfg: AppConfig) -> Result<()> {
         // Si falla (paquete corrupto, versión incompatible), lo ignoramos
         match serde_json::from_slice::<InputEvent>(&buf[..len]) {
             Ok(event) => {
+                // Javier: Actualizamos last_peer — este PC nos mandó datos, es un peer válido.
+                // También reseteamos el contador de fallos porque el peer sigue vivo.
+                // Diseño D1 (last_peer como fallback) y D4 (reset en recepción).
+                {
+                    let mut st = state.write();
+                    st.last_peer = Some(peer_addr);
+                    st.consecutive_send_failures = 0;
+                }
+
                 // Javier: Mandamos el evento al módulo de input por el canal
                 // Es como emit() en un Stream — el módulo de input lo recibirá
                 if event_tx.send(event).await.is_err() {
@@ -56,13 +79,16 @@ pub async fn serve(event_tx: Sender<InputEvent>, cfg: AppConfig) -> Result<()> {
     Ok(())
 }
 
-/// Envía un InputEvent a un PC remoto por UDP
-/// Javier: Esta función la llama el módulo de captura cuando el ratón
-/// llega al borde de la pantalla — es el "envío" del evento al otro PC
-#[allow(dead_code)]
-pub async fn send_event(socket: &UdpSocket, event: &InputEvent, target: &str) -> Result<()> {
+/// Envía un InputEvent a un PC remoto por UDP.
+/// Javier: Esta función la llama el sender_loop de capture_macos cuando el SENDER está activo.
+///
+/// Cambio respecto a la versión anterior:
+///   - Acepta &Arc<UdpSocket> en vez de &UdpSocket (el socket es compartido)
+///   - Se quitó #[allow(dead_code)] — ahora capture_macos la usa
+pub async fn send_event(socket: &Arc<UdpSocket>, event: &InputEvent, target: &str) -> Result<()> {
     // Serializar el evento a JSON
     let data = serde_json::to_vec(event)?;
     socket.send_to(&data, target).await?;
     Ok(())
 }
+

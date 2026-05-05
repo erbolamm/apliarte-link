@@ -34,6 +34,10 @@ dirs = "5"
 # Errores más manejables
 anyhow = "1"
 
+# Lock sin poisoning — para SwitchState compartido entre el callback CGEventTap y Tokio
+# Javier: como un Mutex en Dart pero síncrono y más rápido que std::sync::RwLock
+parking_lot = "0.12"
+
 # IPC: comunicación con la UI Flutter
 interprocess = { version = "2", features = ["tokio"] }
 

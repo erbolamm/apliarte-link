@@ -27,6 +27,12 @@ pub struct NetworkConfig {
     pub port: u16,
     /// Si se usa encriptación TLS en los paquetes de red
     pub encrypted: bool,
+    /// Dirección IP:puerto del peer destino (ej: "192.168.1.50:4242").
+    /// Javier: Si se especifica, siempre se usa como destino UDP del SENDER.
+    /// Si no se especifica, se usa el último peer que nos mandó un paquete (last_peer).
+    /// Con #[serde(default)] las configs antiguas sin este campo siguen funcionando.
+    #[serde(default)]
+    pub peer: Option<String>,
 }
 
 /// Configuración de cómo se activa el switch
@@ -55,6 +61,7 @@ impl Default for AppConfig {
             network: NetworkConfig {
                 port: 4242,
                 encrypted: true,
+                peer: None,
             },
             input: InputConfig {
                 hotkey: Some("ctrl+alt+tab".to_string()),
@@ -94,6 +101,33 @@ pub fn load() -> Result<AppConfig> {
         let cfg = AppConfig::default();
         save(&cfg)?;
         Ok(cfg)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Javier: Verifica que configs antiguas (sin campo `peer`) deserializan correctamente
+    // Spec F1 — backward-compatible config loading
+    #[test]
+    fn test_network_config_without_peer_defaults_to_none() {
+        let json = r#"{"port": 4242, "encrypted": false}"#;
+        let cfg: NetworkConfig = serde_json::from_str(json).expect("debe deserializar sin peer");
+        assert_eq!(cfg.peer, None, "peer debe ser None cuando no está en el JSON");
+    }
+
+    // Javier: Verifica que configs nuevas con campo `peer` lo leen correctamente
+    // Spec F2 — explicit peer field used as UDP target
+    #[test]
+    fn test_network_config_with_peer_field() {
+        let json = r#"{"port": 4242, "encrypted": false, "peer": "192.168.1.50:4242"}"#;
+        let cfg: NetworkConfig = serde_json::from_str(json).expect("debe deserializar con peer");
+        assert_eq!(
+            cfg.peer,
+            Some("192.168.1.50:4242".to_string()),
+            "peer debe leerse del JSON"
+        );
     }
 }
 
