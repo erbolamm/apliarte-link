@@ -21,20 +21,29 @@ pub async fn inject(event: InputEvent) -> Result<()> {
 fn inject_sync(event: InputEvent) -> Result<()> {
     use windows::Win32::UI::Input::KeyboardAndMouse::{
         SendInput, INPUT, INPUT_MOUSE, INPUT_KEYBOARD,
-        MOUSEEVENTF_MOVE, MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP,
+        MOUSEEVENTF_MOVE, MOUSEEVENTF_ABSOLUTE,
+        MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP,
         MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP,
         KEYEVENTF_KEYUP, MOUSEINPUT, KEYBDINPUT,
     };
+    use windows::Win32::UI::WindowsAndMessaging::{GetSystemMetrics, SM_CXSCREEN, SM_CYSCREEN};
 
     let input = match event {
         InputEvent::MouseMove { dx, dy } => {
+            // dx/dy son coordenadas absolutas en píxeles del SO emisor.
+            // Windows SendInput con MOUSEEVENTF_ABSOLUTE espera coordenadas
+            // normalizadas de 0 a 65535. Mapeamos usando el tamaño de nuestra pantalla.
+            let sw = unsafe { GetSystemMetrics(SM_CXSCREEN) }.max(1) as f64;
+            let sh = unsafe { GetSystemMetrics(SM_CYSCREEN) }.max(1) as f64;
+            let nx = ((dx / sw) * 65535.0).clamp(0.0, 65535.0) as i32;
+            let ny = ((dy / sh) * 65535.0).clamp(0.0, 65535.0) as i32;
             INPUT {
                 r#type: INPUT_MOUSE,
                 Anonymous: windows::Win32::UI::Input::KeyboardAndMouse::INPUT_0 {
                     mi: MOUSEINPUT {
-                        dx: dx as i32,
-                        dy: dy as i32,
-                        dwFlags: MOUSEEVENTF_MOVE,
+                        dx: nx,
+                        dy: ny,
+                        dwFlags: MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE,
                         ..Default::default()
                     },
                 },
