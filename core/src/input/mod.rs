@@ -1,21 +1,22 @@
 // Javier: Este módulo agrupa toda la lógica de teclado y ratón.
-// Analogía Flutter: es como un GestureDetector global que captura
-// y puede "emitir" eventos de input al SO.
+// Tiene DOS modos de operación que pueden cambiar en tiempo real:
 //
-// Tiene dos modos:
-//   - CAPTURA: intercepta lo que tú haces (teclas, ratón) y lo envía por red
-//   - INYECCIÓN: recibe eventos de otro PC y los simula en este sistema como si
-//                fueran de un teclado/ratón físico conectado aquí
+//   MODO LOCAL (por defecto al arrancar):
+//     - El input va a este PC normalmente
+//     - Vigilamos el borde de pantalla
+//     - Cuando el ratón llega al borde → pasamos a MODO SENDER
 //
-// La implementación real está en submódulos por SO:
-//   - macos.rs  → usa CGEvent (API de Apple)
-//   - windows.rs → usa SendInput (API Win32)
-//   - linux.rs  → usa evdev/uinput (API del kernel Linux)
+//   MODO SENDER (estamos "dentro" del PC remoto):
+//     - Capturamos TODO el input y lo enviamos por UDP al peer
+//     - El input NO llega a ninguna app de este Mac
+//     - Hotkey Ctrl+Alt+Tab → volvemos a MODO LOCAL
+//
+//   MODO RECEIVER (pasivo, siempre activo en paralelo):
+//     - El servidor UDP recibe eventos del PC remoto
+//     - Los inyectamos en este SO como si fueran del teclado/ratón físico
 
 pub mod protocol;
 
-// Javier: En Rust se puede compilar código diferente según el SO
-// Es como if (Platform.isIOS) en Flutter pero decidido en tiempo de compilación
 #[cfg(target_os = "macos")]
 mod macos;
 #[cfg(target_os = "windows")]
@@ -24,33 +25,99 @@ mod windows;
 mod linux;
 
 use crate::config::AppConfig;
+use crate::network::UdpSender;
 use anyhow::Result;
+use std::sync::Arc;
 use tokio::sync::mpsc::Receiver;
 use protocol::InputEvent;
 
-/// Arranca el motor de input.
-/// Javier: Es como llamar a initState() — arranca todos los listeners de input
-/// y mantiene el bucle activo escuchando al canal de eventos de red.
+/// Arranca el motor de input completo (captura + inyección).
+/// `event_rx` recibe los eventos que llegan de la RED (modo receiver).
 pub async fn serve(mut event_rx: Receiver<InputEvent>, cfg: AppConfig) -> Result<()> {
-    tracing::info!("⌨️  Motor de input arrancado (modo: {})",
-        if cfg.input.edge_switch { "borde de pantalla" } else { "hotkey" }
+    tracing::info!(
+        "⌨️  Motor de input arrancando (borde: {}, peer: {})",
+        cfg.input.edge_side,
+        cfg.network.peer_ip.as_deref().unwrap_or("no configurado"),
     );
 
-    // Javier: Bucle infinito esperando eventos de la red
-    // Es como el listen() de un Stream en Flutter
-    while let Some(event) = event_rx.recv().await {
-        tracing::debug!("Input recibido de red: {:?}", event);
+    // ── Sender UDP ────────────────────────────────────────────────────────────
+    let sender: Option<Arc<UdpSender>> = match UdpSender::new(&cfg).await {
+        Ok(s) => {
+            tracing::info!("✅ Sender UDP listo — modo SENDER disponible");
+            Some(Arc::new(s))
+        }
+        Err(e) => {
+            tracing::warn!("⚠️  Sin sender UDP: {}", e);
+            None
+        }
+    };
 
-        // Javier: Según el SO, se llama a la implementación correcta
-        #[cfg(target_os = "macos")]
-        macos::inject(event).await?;
+    // ── macOS: arrancar captura CGEventTap ────────────────────────────────────
+    #[cfg(target_os = "macos")]
+    {
+        use std::sync::atomic::AtomicBool;
+        let (capture_tx, mut capture_rx) =
+            tokio::sync::mpsc::channel::<macos::CapturedEvent>(256);
+        let running = Arc::new(AtomicBool::new(true));
+        macos::start_capture(capture_tx, cfg.input.edge_side.clone(), running);
+
+        loop {
+            tokio::select! {
+                // Eventos de la RED → inyectar localmente (modo RECEIVER)
+                maybe = event_rx.recv() => {
+                    match maybe {
+                        Some(event) => {
+                            if let Err(e) = macos::inject(event).await {
+                                tracing::error!("Inyección macOS fallida: {}", e);
+                            }
+                        }
+                        None => {
+                            tracing::info!("Canal de red cerrado — deteniendo input");
+                            break;
+                        }
+                    }
+                }
+
+                // Eventos capturados localmente → enviar al peer (modo SENDER)
+                maybe = capture_rx.recv() => {
+                    match maybe {
+                        Some(macos::CapturedEvent::Forward(event)) => {
+                            if let Some(ref s) = sender {
+                                if let Err(e) = s.send(&event).await {
+                                    tracing::error!("Error enviando UDP: {}", e);
+                                }
+                            }
+                        }
+                        Some(macos::CapturedEvent::EdgeReached) => {
+                            tracing::info!("🔀 Borde alcanzado — input al PC remoto");
+                        }
+                        Some(macos::CapturedEvent::HotkeyPressed) => {
+                            tracing::info!("⌨️  Hotkey → volviendo al PC local");
+                        }
+                        None => break,
+                    }
+                }
+            }
+        }
+        return Ok(());
+    }
+
+    // ── Windows/Linux: solo modo RECEIVER por ahora ──────────────────────────
+    #[allow(unreachable_code)]
+    while let Some(event) = event_rx.recv().await {
+        tracing::debug!("← Red: inyectando {:?}", event);
 
         #[cfg(target_os = "windows")]
-        windows::inject(event).await?;
+        if let Err(e) = windows::inject(event).await {
+            tracing::error!("Inyección Windows fallida: {}", e);
+        }
 
         #[cfg(target_os = "linux")]
-        linux::inject(event).await?;
+        if let Err(e) = linux::inject(event).await {
+            tracing::error!("Inyección Linux fallida: {}", e);
+        }
     }
 
     Ok(())
 }
+

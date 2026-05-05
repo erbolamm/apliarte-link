@@ -1,0 +1,20 @@
+{
+  "_instrucciones": "Copia este archivo a config.json y cambia peer_ip por la IP del otro PC",
+  "_como_ver_ip_mac": "Abre Terminal y escribe: ipconfig getifaddr en0",
+  "_como_ver_ip_windows": "Abre CMD y escribe: ipconfig | findstr IPv4",
+
+  "network": {
+    "port": 4242,
+    "encrypted": false,
+    "peer_ip": "192.168.1.X"
+  },
+  "input": {
+    "hotkey": "ctrl+alt+tab",
+    "edge_switch": true,
+    "edge_side": "right"
+  },
+  "ui": {
+    "theme": "dark",
+    "language": "es"
+  }
+}

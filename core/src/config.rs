@@ -27,6 +27,9 @@ pub struct NetworkConfig {
     pub port: u16,
     /// Si se usa encriptación TLS en los paquetes de red
     pub encrypted: bool,
+    /// IP del otro PC (obligatorio para el MVP — se configura manualmente)
+    /// Ejemplo: "192.168.1.50"
+    pub peer_ip: Option<String>,
 }
 
 /// Configuración de cómo se activa el switch
@@ -54,7 +57,8 @@ impl Default for AppConfig {
         Self {
             network: NetworkConfig {
                 port: 4242,
-                encrypted: true,
+                encrypted: false, // MVP: UDP plano para simplificar
+                peer_ip: None,    // El usuario configura la IP del otro PC
             },
             input: InputConfig {
                 hotkey: Some("ctrl+alt+tab".to_string()),
