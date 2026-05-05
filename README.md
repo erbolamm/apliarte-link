@@ -73,6 +73,30 @@ apliarte-switch/
 
 ---
 
+## Clonar el repositorio
+
+### Mac
+
+```bash
+cd /Users/apliarte/trabajo
+git clone https://github.com/erbolamm/apliarte-switch.git apliarte-switch
+cd apliarte-switch
+git checkout feat/core-mac-windows-mvp
+```
+
+### Windows (PowerShell)
+
+```powershell
+cd C:\trabajoPc
+git clone https://github.com/erbolamm/apliarte-switch.git apliarte-switch-main
+cd apliarte-switch-main
+git checkout feat/core-mac-windows-mvp
+```
+
+> Tras clonar, la rama activa de desarrollo es `feat/core-mac-windows-mvp`. La rama `main` es la web y los releases.
+
+---
+
 ## Compilar desde código fuente
 
 ### Requisitos
