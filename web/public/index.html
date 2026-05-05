@@ -117,64 +117,23 @@
     <section id="descargar" class="section section-alt">
       <div class="container">
         <h2 data-i18n="download.title">Descargar e instalar</h2>
-        <p class="section-lead" data-i18n="download.lead">Un comando y listo. Elige tu sistema operativo:</p>
 
-        <div class="install-tabs">
-          <button class="tab-btn active" data-tab="macos">macOS</button>
-          <button class="tab-btn" data-tab="linux">Linux</button>
-          <button class="tab-btn" data-tab="windows">Windows</button>
+        <div class="wip-notice">
+          <div class="wip-icon">🚧</div>
+          <div class="wip-body">
+            <strong data-i18n="download.wip.title">Versión descargable en camino</strong>
+            <p data-i18n="download.wip.desc">El núcleo de Mac y Windows ya está programado y compila sin errores. Estamos preparando los binarios firmados y los scripts de instalación automática. Cuando estén listos aparecerán aquí.</p>
+            <a href="https://github.com/erbolamm/apliarte-switch" target="_blank" rel="noopener" class="btn btn-ghost btn-sm" data-i18n="download.wip.github">Seguir el progreso en GitHub →</a>
+          </div>
+        </div>
+
+        <div class="install-tabs install-tabs-disabled">
+          <button class="tab-btn active" data-tab="macos" disabled>macOS <span class="soon">próximamente</span></button>
+          <button class="tab-btn" data-tab="linux" disabled>Linux <span class="soon">próximamente</span></button>
+          <button class="tab-btn" data-tab="windows" disabled>Windows <span class="soon">próximamente</span></button>
           <button class="tab-btn" data-tab="ios" disabled>iOS <span class="soon">próximamente</span></button>
         </div>
 
-        <div class="install-panels">
-          <div class="install-panel active" data-panel="macos">
-            <div class="install-card">
-              <h4 data-i18n="download.macos.auto">Script automático <span class="recommended">recomendado</span></h4>
-              <pre class="code-block" data-copy><code>curl -fsSL https://raw.githubusercontent.com/erbolamm/apliarte-switch/main/scripts/install.sh | bash</code><button class="copy-btn" aria-label="Copiar">📋</button></pre>
-            </div>
-            <div class="install-card">
-              <h4 data-i18n="download.macos.cargo">Con Cargo (si tienes Rust)</h4>
-              <pre class="code-block" data-copy><code>cargo install apliarte-switch</code><button class="copy-btn" aria-label="Copiar">📋</button></pre>
-            </div>
-            <div class="install-card disabled">
-              <h4 data-i18n="download.macos.brew">Homebrew <span class="soon">próximamente</span></h4>
-              <pre class="code-block"><code># brew install erbolamm/tap/apliarte-switch</code></pre>
-            </div>
-          </div>
-
-          <div class="install-panel" data-panel="linux">
-            <div class="install-card">
-              <h4 data-i18n="download.linux.auto">Script automático <span class="recommended">recomendado</span></h4>
-              <pre class="code-block" data-copy><code>curl -fsSL https://raw.githubusercontent.com/erbolamm/apliarte-switch/main/scripts/install.sh | bash</code><button class="copy-btn" aria-label="Copiar">📋</button></pre>
-            </div>
-            <div class="install-card">
-              <h4 data-i18n="download.linux.cargo">Con Cargo</h4>
-              <pre class="code-block" data-copy><code>cargo install apliarte-switch</code><button class="copy-btn" aria-label="Copiar">📋</button></pre>
-            </div>
-            <div class="install-card">
-              <h4 data-i18n="download.linux.perm">Permiso /dev/uinput (una sola vez)</h4>
-              <pre class="code-block" data-copy><code>sudo usermod -a -G input $USER</code><button class="copy-btn" aria-label="Copiar">📋</button></pre>
-              <p class="hint" data-i18n="download.linux.hint">Cierra sesión y vuelve a entrar para que el grupo se aplique.</p>
-            </div>
-          </div>
-
-          <div class="install-panel" data-panel="windows">
-            <div class="install-card">
-              <h4 data-i18n="download.windows.auto">PowerShell <span class="recommended">recomendado</span></h4>
-              <pre class="code-block" data-copy><code>irm https://raw.githubusercontent.com/erbolamm/apliarte-switch/main/scripts/install.ps1 | iex</code><button class="copy-btn" aria-label="Copiar">📋</button></pre>
-            </div>
-            <div class="install-card">
-              <h4 data-i18n="download.windows.cargo">Con Cargo</h4>
-              <pre class="code-block" data-copy><code>cargo install apliarte-switch</code><button class="copy-btn" aria-label="Copiar">📋</button></pre>
-            </div>
-          </div>
-        </div>
-
-        <div class="post-install">
-          <h4 data-i18n="download.post.title">Después de instalar</h4>
-          <pre class="code-block" data-copy><code>apliarte-switch --verbose</code><button class="copy-btn" aria-label="Copiar">📋</button></pre>
-          <p data-i18n="download.post.desc">Abre la app de configuración para añadir los otros PCs.</p>
-        </div>
       </div>
     </section>
 
