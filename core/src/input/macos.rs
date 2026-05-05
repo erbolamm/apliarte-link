@@ -17,9 +17,7 @@ use anyhow::Result;
 pub async fn inject(event: InputEvent) -> Result<()> {
     // Javier: tokio::task::spawn_blocking es para código que bloquea el hilo
     // (las APIs de C de Apple no son async). Es como usar compute() en Flutter.
-    tokio::task::spawn_blocking(move || {
-        inject_sync(event)
-    }).await??;
+    tokio::task::spawn_blocking(move || inject_sync(event)).await??;
     Ok(())
 }
 
@@ -35,16 +33,37 @@ fn inject_sync(event: InputEvent) -> Result<()> {
 
     match event {
         InputEvent::MouseMove { dx, dy } => {
-            // Javier: Obtenemos la posición actual del ratón y le sumamos el delta
-            // Es como currentOffset + Offset(dx, dy) en Flutter
-            let current = CGEvent::new_mouse_event(
-                source.clone(),
-                CGEventType::MouseMoved,
-                CGPoint::new(dx, dy), // TODO: calcular posición absoluta
-                CGMouseButton::Left,
-            ).map_err(|_| anyhow::anyhow!("Error creando evento de ratón"))?;
+            // Javier: Fix del bug MouseMove (Spec D1):
+            // Antes: CGPoint::new(dx, dy) — trataba los deltas como coordenadas absolutas.
+            //        Causaba teleportación del cursor al punto (dx, dy) en pantalla.
+            // Ahora: Leemos la posición actual del cursor y le sumamos el delta.
+            //        Es como currentOffset + Offset(dx, dy) en Flutter.
+            //
+            // MANUAL TEST:
+            //   1. En macOS, arrancar apliarte-switch en modo RECEIVER
+            //   2. Desde otro PC, enviar MouseMove { dx: 50.0, dy: 0.0 } via UDP
+            //   3. Verificar que el cursor se mueve 50px a la derecha desde su posición actual
+            //   4. (Comportamiento previo incorrecto: el cursor saltaba al punto (50, 0))
+            //
+            // Obtenemos la posición actual del cursor creando un evento de prueba.
+            // CGEvent::new() crea un evento genérico vacío del que podemos leer location().
+            let probe = CGEvent::new(source.clone()).map_err(|_| {
+                anyhow::anyhow!("No se pudo crear CGEvent probe para leer posición del cursor")
+            })?;
+            let current = probe.location(); // CGPoint absoluto actual del cursor
 
-            current.post(CGEventTapLocation::HID);
+            // Calculamos la posición objetivo sumando el delta
+            let target = CGPoint::new(current.x + dx, current.y + dy);
+
+            let evt = CGEvent::new_mouse_event(
+                source,
+                CGEventType::MouseMoved,
+                target,
+                CGMouseButton::Left,
+            )
+            .map_err(|_| anyhow::anyhow!("Error creando evento de ratón"))?;
+
+            evt.post(CGEventTapLocation::HID);
         }
 
         InputEvent::MouseButton { button, pressed } => {
@@ -63,12 +82,14 @@ fn inject_sync(event: InputEvent) -> Result<()> {
                 _ => CGEventType::OtherMouseDown,
             };
 
-            let evt = CGEvent::new_mouse_event(
-                source,
-                event_type,
-                CGPoint::new(0.0, 0.0),
-                btn,
-            ).map_err(|_| anyhow::anyhow!("Error creando evento de click"))?;
+            // Javier: Para eventos de botón, usar la posición actual del cursor
+            // En vez de (0,0) que manda clicks a la esquina superior-izquierda
+            let probe = CGEvent::new(source.clone())
+                .map_err(|_| anyhow::anyhow!("No se pudo leer posición del cursor para click"))?;
+            let current_pos = probe.location();
+
+            let evt = CGEvent::new_mouse_event(source, event_type, current_pos, btn)
+                .map_err(|_| anyhow::anyhow!("Error creando evento de click"))?;
 
             evt.post(CGEventTapLocation::HID);
         }
@@ -78,13 +99,14 @@ fn inject_sync(event: InputEvent) -> Result<()> {
             tracing::debug!("Scroll: dx={} dy={}", dx, dy);
         }
 
-        InputEvent::KeyPress { key_code, pressed, modifiers: _ } => {
+        InputEvent::KeyPress {
+            key_code,
+            pressed,
+            modifiers: _,
+        } => {
             // Javier: CGEvent para teclado — key_code es el código de tecla virtual
-            let evt = CGEvent::new_keyboard_event(
-                source,
-                key_code as u16,
-                pressed,
-            ).map_err(|_| anyhow::anyhow!("Error creando evento de teclado"))?;
+            let evt = CGEvent::new_keyboard_event(source, key_code as u16, pressed)
+                .map_err(|_| anyhow::anyhow!("Error creando evento de teclado"))?;
 
             evt.post(CGEventTapLocation::HID);
         }

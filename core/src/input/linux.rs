@@ -16,9 +16,7 @@ use anyhow::Result;
 
 /// Inyecta un evento de input en Linux vía uinput
 pub async fn inject(event: InputEvent) -> Result<()> {
-    tokio::task::spawn_blocking(move || {
-        inject_sync(event)
-    }).await??;
+    tokio::task::spawn_blocking(move || inject_sync(event)).await??;
     Ok(())
 }
 
@@ -39,7 +37,9 @@ fn inject_sync(event: InputEvent) -> Result<()> {
             tracing::debug!("[Linux] Scroll dx={} dy={}", dx, dy);
             // TODO Fase 3: Implementar con evdev REL_WHEEL
         }
-        InputEvent::KeyPress { key_code, pressed, .. } => {
+        InputEvent::KeyPress {
+            key_code, pressed, ..
+        } => {
             tracing::debug!("[Linux] KeyPress code={} pressed={}", key_code, pressed);
             // TODO Fase 3: Implementar con evdev EV_KEY
         }
