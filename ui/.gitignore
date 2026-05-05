@@ -31,6 +31,12 @@ migrate_working_dir/
 .pub-cache/
 .pub/
 /build/
+
+# Flutter auto-generated — no commitear
+**/flutter/generated_plugin_registrant.cc
+**/flutter/generated_plugin_registrant.h
+**/flutter/generated_plugins.cmake
+**/Runner/GeneratedPluginRegistrant.swift
 /coverage/
 
 # Symbolication related
