@@ -44,7 +44,10 @@ pub fn is_at_edge(point: ScreenPoint, screen_dims: (f64, f64), side: &str) -> bo
         "top" => point.y <= 0.0,
         "bottom" => point.y >= height - 1.0,
         _ => {
-            tracing::warn!("is_at_edge: lado '{}' no reconocido (válidos: left, right, top, bottom)", side);
+            tracing::warn!(
+                "is_at_edge: lado '{}' no reconocido (válidos: left, right, top, bottom)",
+                side
+            );
             false
         }
     }
@@ -65,22 +68,37 @@ mod tests {
     #[test]
     fn test_at_right_edge_exact() {
         // x == width-1 → está en el borde derecho
-        let p = ScreenPoint { x: 1919.0, y: 540.0 };
-        assert!(is_at_edge(p, SCREEN, "right"), "x == width-1 debe ser borde derecho");
+        let p = ScreenPoint {
+            x: 1919.0,
+            y: 540.0,
+        };
+        assert!(
+            is_at_edge(p, SCREEN, "right"),
+            "x == width-1 debe ser borde derecho"
+        );
     }
 
     #[test]
     fn test_at_right_edge_beyond() {
         // x > width-1 (overflow) → también cuenta como borde
-        let p = ScreenPoint { x: 1925.0, y: 540.0 };
-        assert!(is_at_edge(p, SCREEN, "right"), "x > width-1 también debe ser borde derecho");
+        let p = ScreenPoint {
+            x: 1925.0,
+            y: 540.0,
+        };
+        assert!(
+            is_at_edge(p, SCREEN, "right"),
+            "x > width-1 también debe ser borde derecho"
+        );
     }
 
     #[test]
     fn test_not_at_right_edge() {
         // x < width-1 → dentro de la pantalla
         let p = ScreenPoint { x: 960.0, y: 540.0 };
-        assert!(!is_at_edge(p, SCREEN, "right"), "centro no debe ser borde derecho");
+        assert!(
+            !is_at_edge(p, SCREEN, "right"),
+            "centro no debe ser borde derecho"
+        );
     }
 
     // --- Borde izquierdo (left) ---
@@ -88,19 +106,28 @@ mod tests {
     #[test]
     fn test_at_left_edge_exact() {
         let p = ScreenPoint { x: 0.0, y: 540.0 };
-        assert!(is_at_edge(p, SCREEN, "left"), "x == 0 debe ser borde izquierdo");
+        assert!(
+            is_at_edge(p, SCREEN, "left"),
+            "x == 0 debe ser borde izquierdo"
+        );
     }
 
     #[test]
     fn test_at_left_edge_negative() {
         let p = ScreenPoint { x: -5.0, y: 540.0 };
-        assert!(is_at_edge(p, SCREEN, "left"), "x negativa también debe ser borde izquierdo");
+        assert!(
+            is_at_edge(p, SCREEN, "left"),
+            "x negativa también debe ser borde izquierdo"
+        );
     }
 
     #[test]
     fn test_not_at_left_edge() {
         let p = ScreenPoint { x: 100.0, y: 540.0 };
-        assert!(!is_at_edge(p, SCREEN, "left"), "x > 0 no debe ser borde izquierdo");
+        assert!(
+            !is_at_edge(p, SCREEN, "left"),
+            "x > 0 no debe ser borde izquierdo"
+        );
     }
 
     // --- Borde superior (top) ---
@@ -108,39 +135,63 @@ mod tests {
     #[test]
     fn test_at_top_edge_exact() {
         let p = ScreenPoint { x: 960.0, y: 0.0 };
-        assert!(is_at_edge(p, SCREEN, "top"), "y == 0 debe ser borde superior");
+        assert!(
+            is_at_edge(p, SCREEN, "top"),
+            "y == 0 debe ser borde superior"
+        );
     }
 
     #[test]
     fn test_at_top_edge_negative() {
         let p = ScreenPoint { x: 960.0, y: -3.0 };
-        assert!(is_at_edge(p, SCREEN, "top"), "y negativa también debe ser borde superior");
+        assert!(
+            is_at_edge(p, SCREEN, "top"),
+            "y negativa también debe ser borde superior"
+        );
     }
 
     #[test]
     fn test_not_at_top_edge() {
         let p = ScreenPoint { x: 960.0, y: 50.0 };
-        assert!(!is_at_edge(p, SCREEN, "top"), "y > 0 no debe ser borde superior");
+        assert!(
+            !is_at_edge(p, SCREEN, "top"),
+            "y > 0 no debe ser borde superior"
+        );
     }
 
     // --- Borde inferior (bottom) ---
 
     #[test]
     fn test_at_bottom_edge_exact() {
-        let p = ScreenPoint { x: 960.0, y: 1079.0 };
-        assert!(is_at_edge(p, SCREEN, "bottom"), "y == height-1 debe ser borde inferior");
+        let p = ScreenPoint {
+            x: 960.0,
+            y: 1079.0,
+        };
+        assert!(
+            is_at_edge(p, SCREEN, "bottom"),
+            "y == height-1 debe ser borde inferior"
+        );
     }
 
     #[test]
     fn test_at_bottom_edge_beyond() {
-        let p = ScreenPoint { x: 960.0, y: 1090.0 };
-        assert!(is_at_edge(p, SCREEN, "bottom"), "y > height-1 también debe ser borde inferior");
+        let p = ScreenPoint {
+            x: 960.0,
+            y: 1090.0,
+        };
+        assert!(
+            is_at_edge(p, SCREEN, "bottom"),
+            "y > height-1 también debe ser borde inferior"
+        );
     }
 
     #[test]
     fn test_not_at_bottom_edge() {
         let p = ScreenPoint { x: 960.0, y: 500.0 };
-        assert!(!is_at_edge(p, SCREEN, "bottom"), "y < height-1 no debe ser borde inferior");
+        assert!(
+            !is_at_edge(p, SCREEN, "bottom"),
+            "y < height-1 no debe ser borde inferior"
+        );
     }
 
     // --- Esquinas (corners) ---
@@ -148,15 +199,27 @@ mod tests {
     #[test]
     fn test_corner_top_right_matches_both_right_and_top() {
         let p = ScreenPoint { x: 1919.0, y: 0.0 };
-        assert!(is_at_edge(p, SCREEN, "right"), "esquina superior-derecha debe ser borde derecho");
-        assert!(is_at_edge(p, SCREEN, "top"), "esquina superior-derecha debe ser borde superior");
+        assert!(
+            is_at_edge(p, SCREEN, "right"),
+            "esquina superior-derecha debe ser borde derecho"
+        );
+        assert!(
+            is_at_edge(p, SCREEN, "top"),
+            "esquina superior-derecha debe ser borde superior"
+        );
     }
 
     #[test]
     fn test_corner_bottom_left_matches_both_left_and_bottom() {
         let p = ScreenPoint { x: 0.0, y: 1079.0 };
-        assert!(is_at_edge(p, SCREEN, "left"), "esquina inferior-izquierda debe ser borde izquierdo");
-        assert!(is_at_edge(p, SCREEN, "bottom"), "esquina inferior-izquierda debe ser borde inferior");
+        assert!(
+            is_at_edge(p, SCREEN, "left"),
+            "esquina inferior-izquierda debe ser borde izquierdo"
+        );
+        assert!(
+            is_at_edge(p, SCREEN, "bottom"),
+            "esquina inferior-izquierda debe ser borde inferior"
+        );
     }
 
     // --- Centro (no es ningún borde) ---
@@ -174,9 +237,15 @@ mod tests {
 
     #[test]
     fn test_invalid_side_returns_false() {
-        let p = ScreenPoint { x: 1919.0, y: 540.0 };
+        let p = ScreenPoint {
+            x: 1919.0,
+            y: 540.0,
+        };
         // Un side desconocido nunca activa el borde — no debe causar panic
-        assert!(!is_at_edge(p, SCREEN, "diagonal"), "side inválido debe retornar false");
+        assert!(
+            !is_at_edge(p, SCREEN, "diagonal"),
+            "side inválido debe retornar false"
+        );
         assert!(!is_at_edge(p, SCREEN, ""), "side vacío debe retornar false");
     }
 
@@ -186,7 +255,10 @@ mod tests {
     fn test_at_edge_small_screen() {
         let small = (800.0, 600.0);
         let p = ScreenPoint { x: 799.0, y: 300.0 };
-        assert!(is_at_edge(p, small, "right"), "borde derecho en pantalla 800x600");
+        assert!(
+            is_at_edge(p, small, "right"),
+            "borde derecho en pantalla 800x600"
+        );
     }
 
     // --- Spec A2: si edge_switch está desactivado, capture_macos no llama is_at_edge ---

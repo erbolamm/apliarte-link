@@ -49,7 +49,9 @@ pub enum UiResponse {
         peers: Vec<PeerInfo>,
     },
     Ok,
-    Error { message: String },
+    Error {
+        message: String,
+    },
 }
 
 // Javier: Información de un PC conectado — es como un modelo en Flutter (Fase 2)
@@ -61,8 +63,8 @@ pub struct PeerInfo {
     pub connected: bool,
 }
 
-use tokio::net::TcpListener;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+use tokio::net::TcpListener;
 
 /// Arranca el servidor IPC por TCP local (Loopback).
 /// Javier: Es el backend de nuestra UI. Se levanta en el puerto cerrado 4243 (solo accesible desde este Mac).
@@ -87,7 +89,7 @@ pub async fn serve(_event_tx: Sender<InputEvent>, _cfg: AppConfig) -> Result<()>
                 active_peer: None,
                 peers: vec![],
             };
-            
+
             if let Ok(json) = serde_json::to_string(&status) {
                 let _ = writer.write_all(format!("{}\n", json).as_bytes()).await;
             }
@@ -104,7 +106,7 @@ pub async fn serve(_event_tx: Sender<InputEvent>, _cfg: AppConfig) -> Result<()>
                         // Javier: Parsear el JSON que mandó Flutter
                         if let Ok(cmd) = serde_json::from_str::<UiCommand>(&line) {
                             tracing::info!("⚡ Comando recibido de la UI: {:?}", cmd);
-                            
+
                             // Si manda status, le devolvemos el status
                             if let UiCommand::Status = cmd {
                                 let st = UiResponse::Status {
@@ -113,13 +115,15 @@ pub async fn serve(_event_tx: Sender<InputEvent>, _cfg: AppConfig) -> Result<()>
                                     peers: vec![],
                                 };
                                 if let Ok(resp) = serde_json::to_string(&st) {
-                                    let _ = writer.write_all(format!("{}\n", resp).as_bytes()).await;
+                                    let _ =
+                                        writer.write_all(format!("{}\n", resp).as_bytes()).await;
                                 }
                             } else {
                                 // Para otros comandos, solo confirmamos "Ok" de momento
                                 let ok = UiResponse::Ok;
                                 if let Ok(resp) = serde_json::to_string(&ok) {
-                                    let _ = writer.write_all(format!("{}\n", resp).as_bytes()).await;
+                                    let _ =
+                                        writer.write_all(format!("{}\n", resp).as_bytes()).await;
                                 }
                             }
                         }

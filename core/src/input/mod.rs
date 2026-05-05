@@ -19,25 +19,25 @@
 //   - edge.rs       → is_at_edge (puro, con tests)
 //   - capture_macos.rs → CGEventTap SENDER (solo macOS)
 
+pub mod edge;
+pub mod hotkey;
 pub mod protocol;
 pub mod state;
-pub mod hotkey;
-pub mod edge;
 
 // Javier: En Rust se puede compilar código diferente según el SO
 // Es como if (Platform.isIOS) en Flutter pero decidido en tiempo de compilación
+#[cfg(target_os = "linux")]
+mod linux;
 #[cfg(target_os = "macos")]
 mod macos;
 #[cfg(target_os = "windows")]
 mod windows;
-#[cfg(target_os = "linux")]
-mod linux;
 
 #[cfg(target_os = "macos")]
 pub mod capture_macos;
 
 // Re-exportaciones para que el resto del crate acceda directamente
-pub use state::{SharedState, SwitchState, new_shared_state};
+pub use state::SharedState;
 
 use crate::config::AppConfig;
 use anyhow::Result;
@@ -61,7 +61,11 @@ pub async fn serve(
 ) -> Result<()> {
     tracing::info!(
         "⌨️  Motor de input arrancado (modo: {})",
-        if cfg.input.edge_switch { "borde de pantalla" } else { "hotkey" }
+        if cfg.input.edge_switch {
+            "borde de pantalla"
+        } else {
+            "hotkey"
+        }
     );
 
     // Javier: El bucle de inyección (RECEIVER) corre siempre.

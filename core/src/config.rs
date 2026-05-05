@@ -80,8 +80,7 @@ impl Default for AppConfig {
 fn config_path() -> PathBuf {
     // Javier: dirs::config_dir() detecta automáticamente la carpeta correcta
     // por sistema operativo. Como Platform.isIOS en Flutter pero para el escritorio.
-    let base = dirs::config_dir()
-        .unwrap_or_else(|| PathBuf::from("."));
+    let base = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
     base.join("apliarte-switch").join("config.json")
 }
 
@@ -114,7 +113,10 @@ mod tests {
     fn test_network_config_without_peer_defaults_to_none() {
         let json = r#"{"port": 4242, "encrypted": false}"#;
         let cfg: NetworkConfig = serde_json::from_str(json).expect("debe deserializar sin peer");
-        assert_eq!(cfg.peer, None, "peer debe ser None cuando no está en el JSON");
+        assert_eq!(
+            cfg.peer, None,
+            "peer debe ser None cuando no está en el JSON"
+        );
     }
 
     // Javier: Verifica que configs nuevas con campo `peer` lo leen correctamente

@@ -46,10 +46,10 @@ impl HotkeyMatcher {
 
         // Javier: Máscaras de los flags CGEvent en macOS
         // Equivalentes a NX_COMMANDMASK, NX_CONTROLMASK, etc.
-        let has_ctrl = (flags & 0x0004_0000) != 0;  // kCGEventFlagMaskControl
-        let has_alt = (flags & 0x0008_0000) != 0;   // kCGEventFlagMaskAlternate
+        let has_ctrl = (flags & 0x0004_0000) != 0; // kCGEventFlagMaskControl
+        let has_alt = (flags & 0x0008_0000) != 0; // kCGEventFlagMaskAlternate
         let has_shift = (flags & 0x0002_0000) != 0; // kCGEventFlagMaskShift
-        let has_meta = (flags & 0x0010_0000) != 0;  // kCGEventFlagMaskCommand
+        let has_meta = (flags & 0x0010_0000) != 0; // kCGEventFlagMaskCommand
 
         if needs_ctrl != has_ctrl
             || needs_alt != has_alt
@@ -104,18 +104,11 @@ pub fn parse_hotkey(s: &str) -> Result<HotkeyMatcher> {
             other => {
                 // Es la tecla principal
                 if key_name.is_some() {
-                    return Err(anyhow!(
-                        "hotkey '{}' tiene más de una tecla principal",
-                        s
-                    ));
+                    return Err(anyhow!("hotkey '{}' tiene más de una tecla principal", s));
                 }
                 // Verificar que la tecla es conocida
                 if key_name_to_keycode(other).is_none() {
-                    return Err(anyhow!(
-                        "tecla '{}' no reconocida en hotkey '{}'",
-                        other,
-                        s
-                    ));
+                    return Err(anyhow!("tecla '{}' no reconocida en hotkey '{}'", other, s));
                 }
                 key_name = Some(other.to_string());
             }
@@ -123,10 +116,16 @@ pub fn parse_hotkey(s: &str) -> Result<HotkeyMatcher> {
     }
 
     let key_name = key_name.ok_or_else(|| {
-        anyhow!("hotkey '{}' no tiene tecla principal (solo modificadores)", s)
+        anyhow!(
+            "hotkey '{}' no tiene tecla principal (solo modificadores)",
+            s
+        )
     })?;
 
-    Ok(HotkeyMatcher { modifiers, key_name })
+    Ok(HotkeyMatcher {
+        modifiers,
+        key_name,
+    })
 }
 
 /// Traduce nombre de tecla a código virtual macOS (kVK_*).
@@ -272,7 +271,10 @@ mod tests {
     #[test]
     fn test_parse_hotkey_empty_string_fails() {
         assert!(parse_hotkey("").is_err(), "string vacío debe fallar");
-        assert!(parse_hotkey("   ").is_err(), "string con espacios vacío debe fallar");
+        assert!(
+            parse_hotkey("   ").is_err(),
+            "string con espacios vacío debe fallar"
+        );
     }
 
     #[test]
@@ -310,7 +312,10 @@ mod tests {
         // flags: ctrl (0x40000) + alt (0x80000) = 0xC0000
         let flags = 0x0004_0000u64 | 0x0008_0000u64;
         let tab_keycode = 0x30u16;
-        assert!(m.matches(flags, tab_keycode), "debe coincidir con ctrl+alt+tab");
+        assert!(
+            m.matches(flags, tab_keycode),
+            "debe coincidir con ctrl+alt+tab"
+        );
     }
 
     #[test]

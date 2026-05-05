@@ -113,7 +113,10 @@ mod tests {
     fn test_resolve_returns_none_when_neither() {
         // A5: sin peer configurado y sin last_peer → None (no enviar)
         let result = resolve_target_peer(None, None);
-        assert_eq!(result, None, "debe devolver None cuando no hay ningún peer conocido");
+        assert_eq!(
+            result, None,
+            "debe devolver None cuando no hay ningún peer conocido"
+        );
     }
 
     #[test]
@@ -132,8 +135,14 @@ mod tests {
     fn test_switch_state_default_is_inactive() {
         // El estado inicial debe ser inactivo — el sistema arranca como RECEIVER puro
         let state = SwitchState::default();
-        assert!(!state.active, "estado inicial debe ser inactivo (RECEIVER only)");
-        assert!(state.last_peer.is_none(), "last_peer debe ser None al iniciar");
+        assert!(
+            !state.active,
+            "estado inicial debe ser inactivo (RECEIVER only)"
+        );
+        assert!(
+            state.last_peer.is_none(),
+            "last_peer debe ser None al iniciar"
+        );
         assert_eq!(state.consecutive_send_failures, 0);
     }
 

@@ -20,15 +20,9 @@ pub enum InputEvent {
         dy: f64,
     },
     /// Botón del ratón pulsado o soltado
-    MouseButton {
-        button: MouseButton,
-        pressed: bool,
-    },
+    MouseButton { button: MouseButton, pressed: bool },
     /// Rueda del ratón
-    MouseScroll {
-        dx: f64,
-        dy: f64,
-    },
+    MouseScroll { dx: f64, dy: f64 },
     /// Tecla del teclado pulsada o soltada
     KeyPress {
         /// Código de la tecla (independiente del SO)

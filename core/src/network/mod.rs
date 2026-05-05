@@ -91,4 +91,3 @@ pub async fn send_event(socket: &Arc<UdpSocket>, event: &InputEvent, target: &st
     socket.send_to(&data, target).await?;
     Ok(())
 }
-

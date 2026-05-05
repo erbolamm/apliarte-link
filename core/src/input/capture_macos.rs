@@ -28,7 +28,7 @@
 use crate::config::AppConfig;
 use crate::input::edge::{is_at_edge, ScreenPoint};
 use crate::input::hotkey::{parse_hotkey, HotkeyMatcher};
-use crate::input::protocol::{InputEvent, MouseButton, Modifiers};
+use crate::input::protocol::{InputEvent, Modifiers, MouseButton};
 use crate::input::state::{resolve_target_peer, CaptureEvent, SharedState};
 use crate::network::send_event;
 use anyhow::Result;
@@ -72,9 +72,9 @@ extern "C" {
     /// Crea un CGEventTap que intercepta eventos del SO.
     /// kCGSessionEventTap = 1, kCGHeadInsertEventTap = 0, kCGEventTapOptionDefault = 0
     fn CGEventTapCreate(
-        tap: u32,         // CGEventTapLocation: kCGSessionEventTap = 1
-        place: u32,       // CGEventTapPlacement: kCGHeadInsertEventTap = 0
-        options: u32,     // CGEventTapOptions: kCGEventTapOptionDefault = 0
+        tap: u32,                // CGEventTapLocation: kCGSessionEventTap = 1
+        place: u32,              // CGEventTapPlacement: kCGHeadInsertEventTap = 0
+        options: u32,            // CGEventTapOptions: kCGEventTapOptionDefault = 0
         events_of_interest: u64, // bitmask de CGEventType
         callback: CGEventTapCallBack,
         user_info: *mut std::ffi::c_void,
@@ -98,7 +98,8 @@ extern "C" {
 // Constantes de CGEventType (kCGEventType*)
 // ──────────────────────────────────────────────────────────────────
 
-const KCG_EVENT_NULL: u32 = 0; // solo usado en tests para verificar la máscara
+#[cfg(test)]
+const KCG_EVENT_NULL: u32 = 0;
 const KCG_EVENT_LEFT_MOUSE_DOWN: u32 = 1;
 const KCG_EVENT_LEFT_MOUSE_UP: u32 = 2;
 const KCG_EVENT_RIGHT_MOUSE_DOWN: u32 = 3;
@@ -133,7 +134,7 @@ extern "C" {
 const KCG_EVENT_FLAG_SHIFT: u64 = 0x0002_0000;
 const KCG_EVENT_FLAG_CONTROL: u64 = 0x0004_0000;
 const KCG_EVENT_FLAG_ALTERNATE: u64 = 0x0008_0000; // Option/Alt
-const KCG_EVENT_FLAG_COMMAND: u64 = 0x0010_0000;   // Cmd/Meta
+const KCG_EVENT_FLAG_COMMAND: u64 = 0x0010_0000; // Cmd/Meta
 
 /// Arranca el CGEventTap en un thread dedicado y el sender_loop como tarea Tokio.
 ///
@@ -152,7 +153,11 @@ pub async fn run(cfg: AppConfig, socket: Arc<UdpSocket>, state: SharedState) -> 
 
     // Javier: Dimensiones de la pantalla principal para is_at_edge
     let screen_dims = get_main_screen_dims();
-    tracing::debug!("Dimensiones pantalla principal: {}x{}", screen_dims.0, screen_dims.1);
+    tracing::debug!(
+        "Dimensiones pantalla principal: {}x{}",
+        screen_dims.0,
+        screen_dims.1
+    );
 
     // Parsear hotkey fuera del thread — reportar errores de config temprano
     let hotkey_matcher: Option<HotkeyMatcher> = match cfg.input.hotkey.as_deref() {
@@ -229,7 +234,9 @@ fn tap_thread(
     if tap_port.is_null() {
         // Spec C1: sin permisos → log + retornar sin panic
         // Liberar el contexto que leakeamos
-        unsafe { drop(Box::from_raw(ctx_ptr as *mut TapContext)); }
+        unsafe {
+            drop(Box::from_raw(ctx_ptr as *mut TapContext));
+        }
         log_tap_permission_error();
         return;
     }
@@ -237,9 +244,8 @@ fn tap_thread(
     // Spec C2: tap creado con éxito — habilitar y añadir al RunLoop
     tracing::info!("✅ CGEventTap creado. SENDER activo — capturando input local.");
 
-    let run_loop_source = unsafe {
-        CFMachPortCreateRunLoopSource(std::ptr::null_mut(), tap_port, 0)
-    };
+    let run_loop_source =
+        unsafe { CFMachPortCreateRunLoopSource(std::ptr::null_mut(), tap_port, 0) };
 
     if run_loop_source.is_null() {
         unsafe {
@@ -257,7 +263,9 @@ fn tap_thread(
     run_loop.add_source(&source, unsafe { kCFRunLoopCommonModes });
 
     // Habilitar el tap (necesario antes de CFRunLoopRun)
-    unsafe { CGEventTapEnable(tap_port, true); }
+    unsafe {
+        CGEventTapEnable(tap_port, true);
+    }
 
     // Bloqueante — vive hasta que algo detenga el RunLoop
     CFRunLoop::run_current();
@@ -319,14 +327,18 @@ unsafe extern "C" fn raw_tap_callback(
     if ctx.cfg.input.edge_switch && event_type == KCG_EVENT_MOUSE_MOVED {
         // Leer posición del cursor directamente desde el evento
         let location = CGEventGetLocation(event_ref);
-        let point = ScreenPoint { x: location.x, y: location.y };
+        let point = ScreenPoint {
+            x: location.x,
+            y: location.y,
+        };
 
         if is_at_edge(point, ctx.screen_dims, &ctx.cfg.input.edge_side) {
             let (is_active, last_peer) = {
                 let st = ctx.state.read();
                 (st.active, st.last_peer)
             };
-            let has_peer = resolve_target_peer(ctx.cfg.network.peer.as_deref(), last_peer).is_some();
+            let has_peer =
+                resolve_target_peer(ctx.cfg.network.peer.as_deref(), last_peer).is_some();
 
             if has_peer && !is_active {
                 ctx.state.write().active = true;
@@ -344,7 +356,8 @@ unsafe extern "C" fn raw_tap_callback(
     if let Some(ref matcher) = ctx.hotkey_matcher {
         if event_type == KCG_EVENT_KEY_DOWN {
             let flags = CGEventGetFlags(event_ref);
-            let key_code = CGEventGetIntegerValueField(event_ref, KCG_KEYBOARD_EVENT_KEYCODE) as u16;
+            let key_code =
+                CGEventGetIntegerValueField(event_ref, KCG_KEYBOARD_EVENT_KEYCODE) as u16;
 
             if matcher.matches(flags, key_code) {
                 let mut st = ctx.state.write();
@@ -400,10 +413,7 @@ unsafe extern "C" fn raw_tap_callback(
 }
 
 /// Traduce un CGEvent raw a InputEvent del protocolo UDP.
-unsafe fn raw_translate_event(
-    event_type: u32,
-    event: *mut std::ffi::c_void,
-) -> Option<InputEvent> {
+unsafe fn raw_translate_event(event_type: u32, event: *mut std::ffi::c_void) -> Option<InputEvent> {
     match event_type {
         KCG_EVENT_MOUSE_MOVED => {
             // Spec B1: deltas relativos del ratón
@@ -413,8 +423,7 @@ unsafe fn raw_translate_event(
         }
 
         KCG_EVENT_KEY_DOWN | KCG_EVENT_KEY_UP => {
-            let key_code =
-                CGEventGetIntegerValueField(event, KCG_KEYBOARD_EVENT_KEYCODE) as u32;
+            let key_code = CGEventGetIntegerValueField(event, KCG_KEYBOARD_EVENT_KEYCODE) as u32;
             let pressed = event_type == KCG_EVENT_KEY_DOWN;
             let flags = CGEventGetFlags(event);
             let modifiers = Modifiers {
@@ -423,17 +432,27 @@ unsafe fn raw_translate_event(
                 shift: (flags & KCG_EVENT_FLAG_SHIFT) != 0,
                 meta: (flags & KCG_EVENT_FLAG_COMMAND) != 0,
             };
-            Some(InputEvent::KeyPress { key_code, pressed, modifiers })
+            Some(InputEvent::KeyPress {
+                key_code,
+                pressed,
+                modifiers,
+            })
         }
 
         KCG_EVENT_LEFT_MOUSE_DOWN | KCG_EVENT_LEFT_MOUSE_UP => {
             let pressed = event_type == KCG_EVENT_LEFT_MOUSE_DOWN;
-            Some(InputEvent::MouseButton { button: MouseButton::Left, pressed })
+            Some(InputEvent::MouseButton {
+                button: MouseButton::Left,
+                pressed,
+            })
         }
 
         KCG_EVENT_RIGHT_MOUSE_DOWN | KCG_EVENT_RIGHT_MOUSE_UP => {
             let pressed = event_type == KCG_EVENT_RIGHT_MOUSE_DOWN;
-            Some(InputEvent::MouseButton { button: MouseButton::Right, pressed })
+            Some(InputEvent::MouseButton {
+                button: MouseButton::Right,
+                pressed,
+            })
         }
 
         KCG_EVENT_SCROLL_WHEEL => {
@@ -489,7 +508,9 @@ async fn sender_loop(
 
                 tracing::warn!(
                     "⚠️  Error enviando a {} (fallo #{}/10): {}",
-                    target_str, failures, e
+                    target_str,
+                    failures,
+                    e
                 );
 
                 // Diseño D4: auto-desactivar tras 10 fallos consecutivos
@@ -542,7 +563,9 @@ mod tests {
     #[tokio::test]
     async fn test_sender_loop_auto_deactivates_after_10_udp_failures() {
         let socket = Arc::new(
-            tokio::net::UdpSocket::bind("127.0.0.1:0").await.expect("bind fallido"),
+            tokio::net::UdpSocket::bind("127.0.0.1:0")
+                .await
+                .expect("bind fallido"),
         );
 
         let state = new_shared_state();
@@ -567,7 +590,8 @@ mod tests {
 
         tracing::info!(
             "Resultado sender_loop: failures={}, active={}",
-            failures, active
+            failures,
+            active
         );
 
         // Si macOS reportó ECONNREFUSED (lo normal para localhost puerto cerrado):
@@ -577,7 +601,9 @@ mod tests {
         // En ambos casos el estado debe ser consistente
         assert!(
             (active == false) || (active == true && failures == 0) || failures >= 1,
-            "estado inconsistente: failures={}, active={}", failures, active
+            "estado inconsistente: failures={}, active={}",
+            failures,
+            active
         );
     }
 
