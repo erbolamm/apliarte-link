@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ApliArte Link — KVM virtual por red local</title>
+  <meta name="description" content="Comparte teclado y ratón entre Mac, Windows y Linux por red local. Sin cables, sin hardware extra. Gratis." />
+  <meta property="og:title" content="ApliArte Link" />
+  <meta property="og:description" content="KVM virtual por red local — un solo teclado y ratón para todos tus ordenadores." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://apliarte-link.web.app" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%237c5cff'/><text x='50' y='62' font-size='42' text-anchor='middle' fill='white' font-family='Arial' font-weight='bold'>L</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="#" class="brand">
+        <span class="brand-mark">L</span>
+        <span class="brand-name">ApliArte <span class="brand-accent">Link</span></span>
+      </a>
+      <nav class="main-nav">
+        <a href="#que-es" data-i18n="nav.what">¿Qué es?</a>
+        <a href="#descargar" data-i18n="nav.download">Descargar</a>
+        <a href="#roadmap" data-i18n="nav.roadmap">Roadmap</a>
+        <a href="#apoyar" data-i18n="nav.support">Apoyar</a>
+        <a href="https://github.com/erbolamm/apliarte-switch" target="_blank" rel="noopener">GitHub</a>
+      </nav>
+      <button class="lang-toggle" id="langToggle" aria-label="Cambiar idioma">
+        <span class="lang-active">ES</span>
+        <span class="lang-sep">·</span>
+        <span class="lang-other">EN</span>
+      </button>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- HERO -->
+    <section class="hero">
+      <div class="container">
+        <div class="hero-grid">
+          <div class="hero-text">
+            <span class="badge" data-i18n="hero.badge">🟡 Fase 1 — macOS en desarrollo</span>
+            <h1 data-i18n="hero.title">Un teclado. Un ratón. <span class="text-gradient">Todos tus ordenadores.</span></h1>
+            <p class="lead" data-i18n="hero.lead">ApliArte Link es un KVM virtual por red local. Mueve el ratón al borde de la pantalla y salta al siguiente PC. Sin cables, sin dongles, sin hardware extra.</p>
+            <div class="hero-cta">
+              <a href="#descargar" class="btn btn-primary" data-i18n="hero.cta">Descargar gratis</a>
+              <a href="https://github.com/erbolamm/apliarte-switch" target="_blank" rel="noopener" class="btn btn-ghost" data-i18n="hero.github">Ver en GitHub</a>
+            </div>
+            <div class="hero-meta">
+              <span data-i18n="hero.opensource">🆓 Gratis</span>
+              <span data-i18n="hero.noads">🚫 Sin publicidad</span>
+              <span data-i18n="hero.privacy">🔒 Tráfico cifrado (DTLS)</span>
+            </div>
+          </div>
+          <div class="hero-visual" aria-hidden="true">
+            <div class="kvm-diagram">
+              <div class="pc pc-mac"><span>🖥️</span><label>Mac</label></div>
+              <div class="cursor-trail"></div>
+              <div class="pc pc-win"><span>💻</span><label>Windows</label></div>
+              <div class="cursor-trail"></div>
+              <div class="pc pc-linux"><span>🐧</span><label>Linux</label></div>
+              <div class="kvm-cursor" id="kvmCursor">↖</div>
+            </div>
+            <p class="diagram-caption" data-i18n="hero.diagram">Un solo teclado y ratón controla los tres</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- QUÉ ES -->
+    <section id="que-es" class="section">
+      <div class="container">
+        <h2 data-i18n="what.title">¿Qué es ApliArte Link?</h2>
+        <p class="section-lead" data-i18n="what.p1">Instálalo en dos o más ordenadores conectados a la misma red WiFi. Mueve el ratón al borde de la pantalla y el cursor "salta" al siguiente PC. El teclado y el ratón te siguen automáticamente.</p>
+        <div class="features-grid">
+          <div class="feature">
+            <div class="feature-icon">🖱️</div>
+            <h3 data-i18n="what.f1.title">Switch automático</h3>
+            <p data-i18n="what.f1.desc">Mueve el ratón al borde y cambia de PC sin pulsar nada.</p>
+          </div>
+          <div class="feature">
+            <div class="feature-icon">⌨️</div>
+            <h3 data-i18n="what.f2.title">Hotkey configurable</h3>
+            <p data-i18n="what.f2.desc">Cambia de PC con un atajo de teclado (Ctrl+Alt+Tab por defecto).</p>
+          </div>
+          <div class="feature">
+            <div class="feature-icon">🔒</div>
+            <h3 data-i18n="what.f3.title">Tráfico cifrado</h3>
+            <p data-i18n="what.f3.desc">DTLS sobre UDP. Tus pulsaciones nunca viajan en claro.</p>
+          </div>
+          <div class="feature">
+            <div class="feature-icon">🌐</div>
+            <h3 data-i18n="what.f4.title">Descubrimiento automático</h3>
+            <p data-i18n="what.f4.desc">Los ordenadores con tu cuenta se encuentran solos en la red local.</p>
+          </div>
+          <div class="feature">
+            <div class="feature-icon">🎨</div>
+            <h3 data-i18n="what.f5.title">App nativa</h3>
+            <p data-i18n="what.f5.desc">Hecha en Flutter Desktop. Tema claro y oscuro.</p>
+          </div>
+          <div class="feature">
+            <div class="feature-icon">📦</div>
+            <h3 data-i18n="what.f6.title">Perfiles exportables</h3>
+            <p data-i18n="what.f6.desc">Guarda y comparte configuraciones en JSON.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DESCARGAR -->
+    <section id="descargar" class="section section-alt">
+      <div class="container">
+        <h2 data-i18n="download.title">Descargar e instalar</h2>
+        <p class="section-lead" data-i18n="download.lead">Un comando y listo. Elige tu sistema operativo:</p>
+
+        <div class="install-tabs">
+          <button class="tab-btn active" data-tab="macos">macOS</button>
+          <button class="tab-btn" data-tab="linux">Linux</button>
+          <button class="tab-btn" data-tab="windows">Windows</button>
+          <button class="tab-btn" data-tab="ios" disabled>iOS <span class="soon">próximamente</span></button>
+        </div>
+
+        <div class="install-panels">
+          <div class="install-panel active" data-panel="macos">
+            <div class="install-card">
+              <h4 data-i18n="download.macos.auto">Script automático <span class="recommended">recomendado</span></h4>
+              <pre class="code-block" data-copy><code>curl -fsSL https://raw.githubusercontent.com/erbolamm/apliarte-switch/main/scripts/install.sh | bash</code><button class="copy-btn" aria-label="Copiar">📋</button></pre>
+            </div>
+            <div class="install-card">
+              <h4 data-i18n="download.macos.cargo">Con Cargo (si tienes Rust)</h4>
+              <pre class="code-block" data-copy><code>cargo install apliarte-switch</code><button class="copy-btn" aria-label="Copiar">📋</button></pre>
+            </div>
+            <div class="install-card disabled">
+              <h4 data-i18n="download.macos.brew">Homebrew <span class="soon">próximamente</span></h4>
+              <pre class="code-block"><code># brew install erbolamm/tap/apliarte-switch</code></pre>
+            </div>
+          </div>
+
+          <div class="install-panel" data-panel="linux">
+            <div class="install-card">
+              <h4 data-i18n="download.linux.auto">Script automático <span class="recommended">recomendado</span></h4>
+              <pre class="code-block" data-copy><code>curl -fsSL https://raw.githubusercontent.com/erbolamm/apliarte-switch/main/scripts/install.sh | bash</code><button class="copy-btn" aria-label="Copiar">📋</button></pre>
+            </div>
+            <div class="install-card">
+              <h4 data-i18n="download.linux.cargo">Con Cargo</h4>
+              <pre class="code-block" data-copy><code>cargo install apliarte-switch</code><button class="copy-btn" aria-label="Copiar">📋</button></pre>
+            </div>
+            <div class="install-card">
+              <h4 data-i18n="download.linux.perm">Permiso /dev/uinput (una sola vez)</h4>
+              <pre class="code-block" data-copy><code>sudo usermod -a -G input $USER</code><button class="copy-btn" aria-label="Copiar">📋</button></pre>
+              <p class="hint" data-i18n="download.linux.hint">Cierra sesión y vuelve a entrar para que el grupo se aplique.</p>
+            </div>
+          </div>
+
+          <div class="install-panel" data-panel="windows">
+            <div class="install-card">
+              <h4 data-i18n="download.windows.auto">PowerShell <span class="recommended">recomendado</span></h4>
+              <pre class="code-block" data-copy><code>irm https://raw.githubusercontent.com/erbolamm/apliarte-switch/main/scripts/install.ps1 | iex</code><button class="copy-btn" aria-label="Copiar">📋</button></pre>
+            </div>
+            <div class="install-card">
+              <h4 data-i18n="download.windows.cargo">Con Cargo</h4>
+              <pre class="code-block" data-copy><code>cargo install apliarte-switch</code><button class="copy-btn" aria-label="Copiar">📋</button></pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="post-install">
+          <h4 data-i18n="download.post.title">Después de instalar</h4>
+          <pre class="code-block" data-copy><code>apliarte-switch --verbose</code><button class="copy-btn" aria-label="Copiar">📋</button></pre>
+          <p data-i18n="download.post.desc">Abre la app de configuración para añadir los otros PCs.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ESTADO ACTUAL -->
+    <section class="section section-promise">
+      <div class="container">
+        <div class="promise-card">
+          <h2 data-i18n="promise.title">Hoy: gratis, sin publicidad, sin suscripción</h2>
+          <p data-i18n="promise.body">ApliArte Link es gratis. Mientras haya apoyo de la comunidad, seguirá siendo así. <strong>Si hay apoyo, no habrá publicidad ni suscripción.</strong> Es un compromiso, no una promesa de marketing.</p>
+          <a href="#apoyar" class="btn btn-primary" data-i18n="promise.cta">Cómo puedes apoyar</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- APOYAR -->
+    <section id="apoyar" class="section">
+      <div class="container">
+        <h2 data-i18n="support.title">💖 Apoya el proyecto</h2>
+        <p class="section-lead" data-i18n="support.lead">Si esta herramienta te ahorra tiempo, un café ayuda a mantener el desarrollo. Cada aportación retrasa la necesidad de monetizar y mantiene la app gratuita.</p>
+
+        <div class="support-grid">
+          <a href="https://paypal.me/erbolamm" target="_blank" rel="noopener" class="support-card">
+            <div class="support-icon">💳</div>
+            <h3>PayPal</h3>
+            <p>paypal.me/erbolamm</p>
+          </a>
+          <a href="https://ko-fi.com/C0C11TWR1K" target="_blank" rel="noopener" class="support-card">
+            <div class="support-icon">☕</div>
+            <h3>Ko-fi</h3>
+            <p>ko-fi.com/C0C11TWR1K</p>
+          </a>
+          <a href="https://streamelements.com/apliarte/tip" target="_blank" rel="noopener" class="support-card">
+            <div class="support-icon">🎮</div>
+            <h3>Twitch Tip</h3>
+            <p>streamelements.com/apliarte/tip</p>
+          </a>
+        </div>
+
+        <div class="redeem-note">
+          <h4 data-i18n="support.redeem.title">📝 Sobre el canje futuro</h4>
+          <p data-i18n="support.redeem.body">Si en el futuro la app pasa a tener planes de pago, los apoyantes actuales tendrán canje proporcional. Para que valga, en el comentario o asunto del pago menciona <strong>"ApliArte Link"</strong> y deja un email de contacto. Es de buena fe, sin letra pequeña.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ROADMAP -->
+    <section id="roadmap" class="section section-alt">
+      <div class="container">
+        <h2 data-i18n="roadmap.title">🗺️ Roadmap</h2>
+        <p class="section-lead" data-i18n="roadmap.lead">Lo que hay, lo que viene y lo que está en el horizonte. La lista crece según las ideas y el apoyo.</p>
+
+        <div class="roadmap">
+          <div class="roadmap-item done">
+            <div class="roadmap-dot"></div>
+            <div class="roadmap-content">
+              <span class="roadmap-status" data-i18n="roadmap.s.done">Listo</span>
+              <h4 data-i18n="roadmap.r1.title">Captura de input en macOS</h4>
+              <p data-i18n="roadmap.r1.desc">CGEventTap, hotkey, edge switch, envío UDP. Núcleo del KVM.</p>
+            </div>
+          </div>
+          <div class="roadmap-item progress">
+            <div class="roadmap-dot"></div>
+            <div class="roadmap-content">
+              <span class="roadmap-status" data-i18n="roadmap.s.progress">En curso</span>
+              <h4 data-i18n="roadmap.r2.title">Sistema de cuentas + modo local</h4>
+              <p data-i18n="roadmap.r2.desc">Login con email y contraseña. Los ordenadores con la misma cuenta se encuentran solos.</p>
+            </div>
+          </div>
+          <div class="roadmap-item next">
+            <div class="roadmap-dot"></div>
+            <div class="roadmap-content">
+              <span class="roadmap-status" data-i18n="roadmap.s.next">Siguiente</span>
+              <h4 data-i18n="roadmap.r3.title">Soporte completo Windows + Linux</h4>
+              <p data-i18n="roadmap.r3.desc">Captura nativa en cada plataforma. Misma experiencia que en macOS.</p>
+            </div>
+          </div>
+          <div class="roadmap-item planned">
+            <div class="roadmap-dot"></div>
+            <div class="roadmap-content">
+              <span class="roadmap-status" data-i18n="roadmap.s.planned">Planificado</span>
+              <h4 data-i18n="roadmap.r4.title">Portapapeles compartido</h4>
+              <p data-i18n="roadmap.r4.desc">Copia en un PC, pega en otro. Texto e imágenes.</p>
+            </div>
+          </div>
+          <div class="roadmap-item planned">
+            <div class="roadmap-dot"></div>
+            <div class="roadmap-content">
+              <span class="roadmap-status" data-i18n="roadmap.s.planned">Planificado</span>
+              <h4 data-i18n="roadmap.r5.title">Compartir archivos entre dispositivos</h4>
+              <p data-i18n="roadmap.r5.desc">Arrastra y suelta archivos entre los PCs vinculados.</p>
+            </div>
+          </div>
+          <div class="roadmap-item planned">
+            <div class="roadmap-dot"></div>
+            <div class="roadmap-content">
+              <span class="roadmap-status" data-i18n="roadmap.s.planned">Planificado</span>
+              <h4 data-i18n="roadmap.r6.title">Audio: micrófono y auriculares</h4>
+              <p data-i18n="roadmap.r6.desc">Presta tu micrófono o tus cascos a otro ordenador en la red.</p>
+            </div>
+          </div>
+          <div class="roadmap-item planned">
+            <div class="roadmap-dot"></div>
+            <div class="roadmap-content">
+              <span class="roadmap-status" data-i18n="roadmap.s.planned">Planificado</span>
+              <h4 data-i18n="roadmap.r7.title">Modo ad-hoc con gesto de vinculación</h4>
+              <p data-i18n="roadmap.r7.desc">En sitios públicos, vincula dos PCs con un gesto sin compartir cuentas.</p>
+            </div>
+          </div>
+          <div class="roadmap-item planned">
+            <div class="roadmap-dot"></div>
+            <div class="roadmap-content">
+              <span class="roadmap-status" data-i18n="roadmap.s.planned">Planificado</span>
+              <h4 data-i18n="roadmap.r8.title">Reciprocidad de periféricos</h4>
+              <p data-i18n="roadmap.r8.desc">Cuando prestas tu ratón, el de la otra persona pasa al tuyo.</p>
+            </div>
+          </div>
+          <div class="roadmap-item planned">
+            <div class="roadmap-dot"></div>
+            <div class="roadmap-content">
+              <span class="roadmap-status" data-i18n="roadmap.s.planned">Planificado</span>
+              <h4 data-i18n="roadmap.r9.title">Cuentas corporativas multiusuario</h4>
+              <p data-i18n="roadmap.r9.desc">Equipos de trabajo con varios usuarios y permisos.</p>
+            </div>
+          </div>
+          <div class="roadmap-item future">
+            <div class="roadmap-dot"></div>
+            <div class="roadmap-content">
+              <span class="roadmap-status" data-i18n="roadmap.s.future">Idea</span>
+              <h4 data-i18n="roadmap.r10.title">Controles de privacidad por periférico</h4>
+              <p data-i18n="roadmap.r10.desc">Activa o desactiva la visibilidad de cada dispositivo individualmente.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PLANES -->
+    <section id="planes" class="section">
+      <div class="container">
+        <h2 data-i18n="plans.title">Planes futuros</h2>
+        <p class="section-lead" data-i18n="plans.lead">Estos planes <strong>no están activos</strong>. Son la dirección si el apoyo no fuera suficiente para mantener la app gratuita. Los enseñamos por transparencia, de buena fe.</p>
+        <div class="plans-disabled-banner">
+          <strong data-i18n="plans.banner.title">⚠️ Sin pagos por ahora</strong>
+          <p data-i18n="plans.banner.body">Hoy todo es gratis. Si en el futuro se activan, los apoyantes actuales con email registrado tendrán canje.</p>
+        </div>
+
+        <div class="plans-grid">
+          <div class="plan-card disabled">
+            <div class="plan-header">
+              <h3>Start</h3>
+              <span class="plan-status" data-i18n="plans.soon">Próximamente</span>
+            </div>
+            <div class="plan-price">
+              <span class="amount">—</span>
+              <span class="period" data-i18n="plans.month">/mes</span>
+            </div>
+            <ul class="plan-features">
+              <li data-i18n="plans.start.f1">✅ Teclado y ratón</li>
+              <li data-i18n="plans.start.f2">✅ Modo local con tu cuenta</li>
+              <li data-i18n="plans.start.f3">✅ Hasta 3 ordenadores</li>
+              <li class="muted" data-i18n="plans.start.f4">⏸️ Audio no incluido</li>
+              <li class="muted" data-i18n="plans.start.f5">⏸️ Archivos no incluidos</li>
+            </ul>
+            <button class="btn btn-disabled" disabled data-i18n="plans.btn.disabled">No disponible</button>
+          </div>
+
+          <div class="plan-card disabled featured">
+            <div class="plan-tag" data-i18n="plans.popular">Popular</div>
+            <div class="plan-header">
+              <h3>Pro</h3>
+              <span class="plan-status" data-i18n="plans.soon">Próximamente</span>
+            </div>
+            <div class="plan-price">
+              <span class="amount">—</span>
+              <span class="period" data-i18n="plans.month">/mes</span>
+            </div>
+            <ul class="plan-features">
+              <li data-i18n="plans.pro.f1">✅ Todo lo de Start</li>
+              <li data-i18n="plans.pro.f2">✅ Todos los dispositivos (audio, archivos, micro, cascos)</li>
+              <li data-i18n="plans.pro.f3">✅ Ordenadores ilimitados</li>
+              <li data-i18n="plans.pro.f4">✅ Modo ad-hoc en redes públicas</li>
+              <li data-i18n="plans.pro.f5">✅ Soporte prioritario</li>
+            </ul>
+            <button class="btn btn-disabled" disabled data-i18n="plans.btn.disabled">No disponible</button>
+          </div>
+
+          <div class="plan-card disabled">
+            <div class="plan-header">
+              <h3>Vitalicio</h3>
+              <span class="plan-status" data-i18n="plans.soon">Próximamente</span>
+            </div>
+            <div class="plan-price">
+              <span class="amount">—</span>
+              <span class="period" data-i18n="plans.once">único</span>
+            </div>
+            <ul class="plan-features">
+              <li data-i18n="plans.life.f1">✅ Todo lo de Pro</li>
+              <li data-i18n="plans.life.f2">✅ Pago único, sin renovaciones</li>
+              <li data-i18n="plans.life.f3">✅ Actualizaciones de por vida</li>
+              <li data-i18n="plans.life.f4">✅ Acceso anticipado a nuevas funciones</li>
+            </ul>
+            <button class="btn btn-disabled" disabled data-i18n="plans.btn.disabled">No disponible</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- NOTA PERSONAL -->
+    <section class="section section-alt">
+      <div class="container container-narrow">
+        <h2 data-i18n="note.title">💬 Una nota personal del autor</h2>
+        <p class="section-lead muted" data-i18n="note.disclaimer">El texto siguiente es un mensaje personal escrito en varios idiomas para que pueda leerlo gente de todo el mundo. No implica que el proyecto tenga soporte funcional completo en esos idiomas.</p>
+
+        <details class="note-lang" open>
+          <summary>🇪🇸 Español</summary>
+          <p>ApliArte Link nació de una necesidad real: tengo varios ordenadores en mi escritorio y pasarme un teclado y un ratón físico de uno a otro siempre fue un engorro. Empecé a programar en abril de 2023 y este proyecto es parte de ese camino de aprendizaje. Lo comparto gratis porque creo que las herramientas útiles deben estar al alcance de todos. Si te ayuda en tu día a día, me hace muy feliz.</p>
+        </details>
+
+        <details class="note-lang">
+          <summary>🇬🇧 English</summary>
+          <p>ApliArte Link was born out of a real need: I have several computers on my desk and physically swapping a keyboard and mouse between them was always a hassle. I started learning to code in April 2023 and this project is part of that journey. I'm sharing it free because I believe useful tools should be accessible to everyone. If it helps you in your daily work, that makes me very happy.</p>
+        </details>
+
+        <details class="note-lang">
+          <summary>🇧🇷 Português</summary>
+          <p>O ApliArte Link nasceu de uma necessidade real: tenho vários computadores na minha mesa e trocar um teclado e mouse fisicamente entre eles sempre foi uma chatice. Comecei a programar em abril de 2023 e este projeto faz parte dessa jornada de aprendizado. Compartilho de graça porque acredito que ferramentas úteis devem estar ao alcance de todos. Se te ajudar no dia a dia, fico muito feliz.</p>
+        </details>
+
+        <details class="note-lang">
+          <summary>🇫🇷 Français</summary>
+          <p>ApliArte Link est né d'un besoin réel : j'ai plusieurs ordinateurs sur mon bureau et déplacer physiquement un clavier et une souris de l'un à l'autre a toujours été fastidieux. J'ai commencé à programmer en avril 2023 et ce projet fait partie de ce chemin d'apprentissage. Je le partage gratuitement parce que je crois que les outils utiles doivent être accessibles à tous. Si cela vous aide au quotidien, je suis très content.</p>
+        </details>
+
+        <details class="note-lang">
+          <summary>🇩🇪 Deutsch</summary>
+          <p>ApliArte Link entstand aus einem echten Bedürfnis: Ich habe mehrere Computer auf meinem Schreibtisch und das physische Hin-und-herreichen einer Tastatur und Maus war immer umständlich. Ich habe im April 2023 angefangen zu programmieren und dieses Projekt ist Teil dieses Lernwegs. Ich teile es kostenlos, weil ich glaube, dass nützliche Werkzeuge für alle zugänglich sein sollten. Wenn es dir im Alltag hilft, freut mich das sehr.</p>
+        </details>
+
+        <details class="note-lang">
+          <summary>🇮🇹 Italiano</summary>
+          <p>ApliArte Link è nato da un'esigenza reale: ho diversi computer sulla scrivania e spostare fisicamente una tastiera e un mouse da uno all'altro è sempre stato scomodo. Ho iniziato a programmare nell'aprile 2023 e questo progetto fa parte di quel percorso di apprendimento. Lo condivido gratuitamente perché credo che gli strumenti utili debbano essere accessibili a tutti. Se ti aiuta nel quotidiano, ne sono molto felice.</p>
+        </details>
+      </div>
+    </section>
+
+    <!-- COMPARTIR -->
+    <section class="section section-share">
+      <div class="container container-narrow">
+        <h2 data-i18n="share.title">💥 Compártelo</h2>
+        <p class="section-lead" data-i18n="share.lead">Si te ahorra cables, tiempo o dolores de cabeza, compártelo. Así llega a más gente.</p>
+        <div class="share-buttons">
+          <a class="share-btn" target="_blank" rel="noopener" href="https://twitter.com/intent/tweet?text=ApliArte%20Link%20%E2%80%94%20KVM%20virtual%20por%20red%20local%20para%20compartir%20teclado%20y%20rat%C3%B3n%20entre%20Mac%2C%20Windows%20y%20Linux.&url=https%3A%2F%2Fapliarte-link.web.app">𝕏</a>
+          <a class="share-btn" target="_blank" rel="noopener" href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fapliarte-link.web.app">LinkedIn</a>
+          <a class="share-btn" target="_blank" rel="noopener" href="https://api.whatsapp.com/send?text=ApliArte%20Link%20%E2%80%94%20https%3A%2F%2Fapliarte-link.web.app">WhatsApp</a>
+          <a class="share-btn" target="_blank" rel="noopener" href="https://t.me/share/url?url=https%3A%2F%2Fapliarte-link.web.app&text=ApliArte%20Link%20%E2%80%94%20KVM%20virtual%20por%20red%20local">Telegram</a>
+          <a class="share-btn" target="_blank" rel="noopener" href="https://www.reddit.com/submit?url=https%3A%2F%2Fapliarte-link.web.app&title=ApliArte%20Link">Reddit</a>
+          <a class="share-btn" target="_blank" rel="noopener" href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fapliarte-link.web.app">Facebook</a>
+          <a class="share-btn" target="_blank" rel="noopener" href="mailto:?subject=ApliArte%20Link&body=https%3A%2F%2Fapliarte-link.web.app">Email</a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <div class="brand">
+            <span class="brand-mark">L</span>
+            <span class="brand-name">ApliArte <span class="brand-accent">Link</span></span>
+          </div>
+          <p class="footer-tagline" data-i18n="footer.tagline">KVM virtual por red local. Gratis.</p>
+        </div>
+        <div>
+          <h5 data-i18n="footer.product">Producto</h5>
+          <a href="#descargar" data-i18n="footer.download">Descargar</a>
+          <a href="#roadmap" data-i18n="footer.roadmap">Roadmap</a>
+          <a href="#planes" data-i18n="footer.plans">Planes</a>
+        </div>
+        <div>
+          <h5 data-i18n="footer.community">Comunidad</h5>
+          <a href="https://github.com/erbolamm/apliarte-switch" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://github.com/erbolamm/apliarte-switch/issues" target="_blank" rel="noopener" data-i18n="footer.issues">Reportar problema</a>
+          <a href="#apoyar" data-i18n="footer.support">Apoyar</a>
+        </div>
+        <div>
+          <h5 data-i18n="footer.author">Autor</h5>
+          <a href="https://apliarte.com" target="_blank" rel="noopener">apliarte.com</a>
+          <a href="https://github.com/erbolamm" target="_blank" rel="noopener">@erbolamm</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>© 2026 ApliArte · MIT License</span>
+        <span data-i18n="footer.builtwith">Hecho con ❤️ desde 2023</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="i18n.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
