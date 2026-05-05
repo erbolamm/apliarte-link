@@ -48,11 +48,8 @@ jobs:
 
       - name: Cache de dependencias Rust
         uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: core
 
       - name: Compilar en release
-        working-directory: core
         run: cargo build --release --target ${{ matrix.target }}
 
       # En Linux también generamos .deb para facilitar la instalación
@@ -60,15 +57,15 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: |
           cargo install cargo-deb
-          cd core && cargo deb --target ${{ matrix.target }}
+          cargo deb --target ${{ matrix.target }}
 
       - name: Preparar binario para subir
         shell: bash
         run: |
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            cp core/target/${{ matrix.target }}/release/${{ env.BIN_NAME }}.exe ${{ matrix.asset_name }}
+            cp target/${{ matrix.target }}/release/${{ env.BIN_NAME }}.exe ${{ matrix.asset_name }}
           else
-            cp core/target/${{ matrix.target }}/release/${{ env.BIN_NAME }} ${{ matrix.asset_name }}
+            cp target/${{ matrix.target }}/release/${{ env.BIN_NAME }} ${{ matrix.asset_name }}
           fi
 
       - name: Subir binario como artefacto
