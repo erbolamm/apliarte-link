@@ -1,10 +1,196 @@
-# ApliArteSwitch
+# ApliArte Link
 
-> **KVM virtual por red local** — Comparte un teclado y ratón entre Mac, Windows y Linux sin cables.
+> **KVM virtual por red local** — Comparte un teclado y ratón entre Mac y Windows sin cables.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-blue)](https://github.com/erbolamm/apliarte-switch/releases)
-[![Estado](https://img.shields.io/badge/estado-WIP%20%E2%80%94%20Fase%201%20Mac-orange)](https://github.com/erbolamm/apliarte-switch)
+[![Estado](https://img.shields.io/badge/estado-MVP%20v0.1%20en%20desarrollo-orange)](#estado-actual)
+[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-blue)](#plataformas)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+---
+
+## ¿Qué es?
+
+ApliArte Link es un **KVM virtual por red local**. Instálalo en dos ordenadores de la misma red WiFi y contrólalos todos con un solo teclado y ratón.
+
+Mueve el ratón hasta el borde de la pantalla → salta al siguiente PC.  
+Sin cables. Sin dongles. Sin hardware extra.
+
+```
+[Tu Mac]  ←──── UDP 4242 ────→  [PC Windows]
+     ☝️ Un solo teclado y ratón para los dos
+```
+
+---
+
+## Estado actual
+
+| Plataforma | Motor (Rust) | Estado |
+|---|---|---|
+| macOS 12+ arm64 / x64 | ✅ Implementado | 🟡 MVP — compilando, test pendiente |
+| Windows 10+ x64 | ✅ Implementado | 🟡 MVP — compilando, test pendiente |
+| Linux x64 | 🔵 Esqueleto | 🔵 Fase 2 — planificado |
+
+> Los binarios descargables estarán disponibles en [apliarte-link.web.app](https://apliarte-link.web.app) en cuanto pase el primer test end-to-end.
+
+---
+
+## Arquitectura
+
+```
+apliarte-switch/
+├── core/                  ← Servicio Rust (motor, corre en segundo plano)
+│   └── src/
+│       ├── input/
+│       │   ├── macos.rs          CGEventTap — captura e inyección macOS
+│       │   ├── capture_windows.rs WH_MOUSE_LL + WH_KEYBOARD_LL — captura Windows
+│       │   ├── windows.rs        SendInput — inyección Windows
+│       │   ├── linux.rs          uinput — inyección Linux (esqueleto)
+│       │   ├── protocol.rs       InputEvent (MouseMove, KeyPress…)
+│       │   └── mod.rs            Orquestación SENDER/RECEIVER
+│       ├── network/mod.rs        UDP port 4242 — UdpSender + receiver
+│       ├── ipc/mod.rs            TCP 127.0.0.1:4243 — comunicación con UI
+│       └── config.rs             JSON en AppData / Library
+├── ui/                    ← App Flutter Desktop (panel de configuración)
+├── web/                   ← Landing page (Firebase Hosting)
+└── .github/workflows/
+    └── release.yml        Compila los 4 binarios y los sube a Firebase al crear un tag
+```
+
+**Core (Rust):** corre de fondo, captura input del SO, lo envía por UDP al otro PC y lo inyecta.  
+**Modos:** cada instancia puede ser SENDER (captura y envía) o RECEIVER (recibe e inyecta), según la configuración.
+
+### Protocolo de red
+
+- Transporte: **UDP port 4242**
+- Serialización: **JSON** (serde_json)
+- Futuro: **DTLS** para tráfico cifrado
+
+### Switch automático
+
+- Detección de borde configurable (`edge_side`: `left` / `right`)
+- Margen de 2px — cuando el cursor llega al borde se activa el switch
+- Hotkey manual: **Ctrl+Alt+Tab** (configurable)
+
+---
+
+## Compilar desde código fuente
+
+### Requisitos
+
+- [Rust](https://rustup.rs/) >= 1.75
+- En macOS: Xcode Command Line Tools (`xcode-select --install`)
+- En Windows: Visual Studio Build Tools con MSVC
+
+### Core
+
+```bash
+# Desde la raíz del proyecto (workspace Cargo)
+cargo build --release
+
+# El binario queda en:
+# macOS/Linux:  target/release/apliarte-switch
+# Windows:      target\release\apliarte-switch.exe
+```
+
+### UI (Flutter Desktop)
+
+```bash
+cd ui
+flutter pub get
+flutter run -d macos     # Mac
+flutter run -d windows   # Windows
+flutter run -d linux     # Linux
+```
+
+---
+
+## Configuración
+
+Al arrancar por primera vez se crea el archivo de configuración automáticamente:
+
+- **macOS/Linux:** `~/Library/Application Support/apliarte-switch/config.json`
+- **Windows:** `%APPDATA%\apliarte-switch\config.json`
+
+```json
+{
+  "network": {
+    "port": 4242,
+    "encrypted": false,
+    "peer_ip": "192.168.1.X"
+  },
+  "input": {
+    "hotkey": "ctrl+alt+tab",
+    "edge_switch": true,
+    "edge_side": "right"
+  },
+  "ui": {
+    "theme": "dark",
+    "language": "es"
+  }
+}
+```
+
+> `peer_ip` es la IP del otro PC en la red local. El PC con `edge_side: "right"` envía cuando el ratón llega al borde derecho. El otro pone `"left"`.
+
+---
+
+## Publicar una nueva versión
+
+Los binarios se compilan automáticamente con GitHub Actions al crear un tag:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+Esto lanza 4 compilaciones en paralelo (macOS arm64, macOS x64, Windows, Linux) y sube los binarios a [apliarte-link.web.app/downloads](https://apliarte-link.web.app).
+
+---
+
+## Autor
+
+Javier Mateo (ApliArte) — [apliarte.com](https://apliarte.com)
+
+---
+
+## 💬 Una nota personal / A personal note
+
+<details>
+<summary>🇪🇸 Español</summary>
+
+ApliArte Link nació de una necesidad real: tengo varios ordenadores en mi escritorio y pasarme un teclado y un ratón físico de uno a otro siempre fue un engorro. Empecé a programar en abril de 2023 y este proyecto es parte de ese camino de aprendizaje. Lo comparto gratis porque creo que las herramientas útiles deben estar al alcance de todos. Si te ayuda en tu día a día, me hace muy feliz.
+</details>
+
+<details>
+<summary>🇬🇧 English</summary>
+
+ApliArte Link was born out of a real need: I have several computers on my desk and physically swapping a keyboard and mouse between them was always a hassle. I started learning to code in April 2023 and this project is part of that journey. I'm sharing it free because I believe useful tools should be accessible to everyone. If it helps you in your daily work, that makes me very happy.
+</details>
+
+<details>
+<summary>🇧🇷 Português</summary>
+
+O ApliArte Link nasceu de uma necessidade real: tenho vários computadores na minha mesa e trocar um teclado e mouse fisicamente entre eles sempre foi uma chatice. Comecei a programar em abril de 2023 e este projeto faz parte dessa jornada de aprendizado. Compartilho de graça porque acredito que ferramentas úteis devem estar ao alcance de todos. Se te ajudar no dia a dia, fico muito feliz.
+</details>
+
+<details>
+<summary>🇫🇷 Français</summary>
+
+ApliArte Link est né d'un besoin réel : j'ai plusieurs ordinateurs sur mon bureau et déplacer physiquement un clavier et une souris de l'un à l'autre a toujours été fastidieux. J'ai commencé à programmer en avril 2023 et ce projet fait partie de ce chemin d'apprentissage. Je le partage gratuitement parce que je crois que les outils utiles doivent être accessibles à tous. Si cela vous aide au quotidien, je suis très content.
+</details>
+
+<details>
+<summary>🇩🇪 Deutsch</summary>
+
+ApliArte Link entstand aus einem echten Bedürfnis: Ich habe mehrere Computer auf meinem Schreibtisch und das physische Hin-und-herreichen einer Tastatur und Maus war immer umständlich. Ich habe im April 2023 angefangen zu programmieren und dieses Projekt ist Teil dieses Lernwegs. Ich teile es kostenlos, weil ich glaube, dass nützliche Werkzeuge für alle zugänglich sein sollten. Wenn es dir im Alltag hilft, freut mich das sehr.
+</details>
+
+<details>
+<summary>🇮🇹 Italiano</summary>
+
+ApliArte Link è nato da un'esigenza reale: ho diversi computer sulla scrivania e spostare fisicamente una tastiera e un mouse da uno all'altro è sempre stato scomodo. Ho iniziato a programmare nell'aprile 2023 e questo progetto fa parte di quel percorso di apprendimento. Lo condivido gratuitamente perché credo che gli strumenti utili debbano essere accessibili a tutti. Se ti aiuta nel quotidiano, ne sono molto felice.
+</details>
+
 
 ---
 
