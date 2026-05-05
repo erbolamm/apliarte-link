@@ -99,3 +99,39 @@ jobs:
           generate_release_notes: true
           draft: false
           prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') }}
+
+  deploy-firebase:
+    name: Deploy binarios a Firebase Hosting
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Descargar todos los binarios
+        uses: actions/download-artifact@v4
+        with:
+          path: web/public/downloads/_artifacts
+
+      - name: Mover binarios a downloads/ con nombres limpios
+        run: |
+          mkdir -p web/public/downloads
+          cp web/public/downloads/_artifacts/apliarte-switch-aarch64-apple-darwin/apliarte-switch-aarch64-apple-darwin \
+             web/public/downloads/apliarte-switch-macos-arm64
+          cp web/public/downloads/_artifacts/apliarte-switch-x86_64-apple-darwin/apliarte-switch-x86_64-apple-darwin \
+             web/public/downloads/apliarte-switch-macos-x64
+          cp web/public/downloads/_artifacts/apliarte-switch-x86_64-unknown-linux-gnu/apliarte-switch-x86_64-unknown-linux-gnu \
+             web/public/downloads/apliarte-switch-linux-x64
+          cp "web/public/downloads/_artifacts/apliarte-switch-x86_64-pc-windows-msvc.exe/apliarte-switch-x86_64-pc-windows-msvc.exe" \
+             web/public/downloads/apliarte-switch-windows-x64.exe
+          echo "${{ github.ref_name }}" > web/public/downloads/version.txt
+          rm -rf web/public/downloads/_artifacts
+
+      - name: Deploy a Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: apliarte-link
+          channelId: live
