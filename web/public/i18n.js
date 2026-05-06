@@ -31,10 +31,10 @@ const I18N = {
     'what.f6.title': 'Perfiles exportables',
     'what.f6.desc': 'Guarda y comparte configuraciones en JSON.',
 
-    'download.title': 'Descargar e instalar',
-    'download.wip.title': 'Versión descargable en camino',
-    'download.wip.desc': 'El núcleo de Mac y Windows ya está programado y compila sin errores. Estamos preparando los binarios firmados y los scripts de instalación automática. Cuando estén listos aparecerán aquí.',
-    'download.wip.github': 'Seguir el progreso en GitHub →',
+    'download.title': 'Descargar',
+    'download.btn': 'Descargar',
+    'download.soon': 'Próximamente',
+    'download.note': '⚠️ Versión alpha — sin firma de código. macOS: clic derecho → Abrir la primera vez. Windows: «Más información» → Ejecutar de todas formas.',
 
     'promise.title': 'Hoy: gratis, sin publicidad, sin suscripción',
     'promise.body': 'ApliArte Link es gratis. Mientras haya apoyo de la comunidad, seguirá siendo así. <strong>Si hay apoyo, no habrá publicidad ni suscripción.</strong> Es un compromiso, no una promesa de marketing.',
@@ -146,10 +146,10 @@ const I18N = {
     'what.f6.title': 'Exportable profiles',
     'what.f6.desc': 'Save and share configurations as JSON.',
 
-    'download.title': 'Download and install',
-    'download.wip.title': 'Downloadable version on the way',
-    'download.wip.desc': 'The Mac and Windows core is already written and compiles without errors. We are preparing signed binaries and automatic install scripts. They will appear here when ready.',
-    'download.wip.github': 'Follow progress on GitHub →',
+    'download.title': 'Download',
+    'download.btn': 'Download',
+    'download.soon': 'Coming soon',
+    'download.note': '⚠️ Alpha release — unsigned binary. macOS: right-click → Open the first time. Windows: "More info" → Run anyway.',
 
     'promise.title': 'Today: free, no ads, no subscription',
     'promise.body': 'ApliArte Link is free. As long as there is community support, it will stay that way. <strong>If there is support, there will be no ads or subscription.</strong> A commitment, not a marketing promise.',
