@@ -150,7 +150,7 @@ jobs:
 
   release:
     name: Crear Release en GitHub
-    needs: [build, build-macos-app]
+    needs: [build]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -165,7 +165,14 @@ jobs:
           mv apliarte-switch-x86_64-apple-darwin/apliarte-switch-x86_64-apple-darwin         apliarte-switch-macos-x64
           mv apliarte-switch-x86_64-unknown-linux-gnu/apliarte-switch-x86_64-unknown-linux-gnu apliarte-switch-linux-x64
           mv "apliarte-switch-x86_64-pc-windows-msvc.exe/apliarte-switch-x86_64-pc-windows-msvc.exe" apliarte-switch-windows-x64.exe
-          mv apliarte-switch-macos-app/apliarte-switch-macos-app.zip apliarte-switch-macos-app.zip
+          # El .app macOS es opcional — solo si el job build-macos-app terminó bien
+          if [ -f "apliarte-switch-macos-app/apliarte-switch-macos-app.zip" ]; then
+            mv apliarte-switch-macos-app/apliarte-switch-macos-app.zip apliarte-switch-macos-app.zip
+            echo "MACOS_APP=apliarte-switch-macos-app.zip" >> $GITHUB_ENV
+          else
+            echo "MACOS_APP=" >> $GITHUB_ENV
+            echo "⚠️ App macOS no disponible en este release"
+          fi
 
       - name: Crear o actualizar GitHub Release
         env:
@@ -176,14 +183,14 @@ jobs:
           if [[ "$TAG" == *alpha* ]] || [[ "$TAG" == *beta* ]]; then
             PRERELEASE="--prerelease"
           fi
-          # Borrar release existente si hay (ignora error si no existe)
+          # Construir lista de archivos — el .app solo si existe
+          FILES="apliarte-switch-macos-arm64 apliarte-switch-macos-x64 apliarte-switch-linux-x64 apliarte-switch-windows-x64.exe"
+          if [ -n "$MACOS_APP" ]; then
+            FILES="$MACOS_APP $FILES"
+          fi
           gh release delete "$TAG" --repo "${{ github.repository }}" --yes 2>/dev/null || true
           gh release create "$TAG" \
-            apliarte-switch-macos-app.zip \
-            apliarte-switch-macos-arm64 \
-            apliarte-switch-macos-x64 \
-            apliarte-switch-linux-x64 \
-            apliarte-switch-windows-x64.exe \
+            $FILES \
             --repo "${{ github.repository }}" \
             --title "$TAG" \
             --generate-notes \
