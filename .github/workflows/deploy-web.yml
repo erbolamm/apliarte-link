@@ -1,0 +1,27 @@
+name: Deploy web a Firebase Hosting
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'web/**'
+
+jobs:
+  deploy:
+    name: Deploy Firebase
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Deploy a Firebase Hosting
+        env:
+          FIREBASE_TOKEN_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          npm install -g firebase-tools
+          echo "$FIREBASE_TOKEN_JSON" > /tmp/firebase-key.json
+          GOOGLE_APPLICATION_CREDENTIALS=/tmp/firebase-key.json firebase deploy --only hosting --project apliarte-link
+          rm /tmp/firebase-key.json
+        working-directory: web
