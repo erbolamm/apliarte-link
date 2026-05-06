@@ -148,6 +148,61 @@ jobs:
           name: apliarte-switch-macos-app
           path: apliarte-switch-macos-app.zip
 
+  # ─────────────────────────────────────────────────────────────────────────────
+  # App Windows completa: Flutter UI + daemon Rust embebido
+  # ─────────────────────────────────────────────────────────────────────────────
+  build-windows-app:
+    name: App Windows (Flutter + Rust)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Instalar Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+
+      - name: Compilar daemon Rust para Windows
+        run: cargo build --release --target x86_64-pc-windows-msvc
+
+      - name: Instalar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Flutter pub get
+        run: flutter pub get
+        working-directory: ui
+
+      - name: Compilar app Flutter Windows
+        run: flutter build windows --release
+        working-directory: ui
+
+      - name: Embeber daemon en la carpeta de la app
+        shell: bash
+        run: |
+          RELEASE_DIR="ui/build/windows/x64/runner/Release"
+          cp "target/x86_64-pc-windows-msvc/release/${{ env.BIN_NAME }}.exe" "$RELEASE_DIR/${{ env.BIN_NAME }}.exe"
+          echo "✅ Daemon embebido en $RELEASE_DIR"
+          ls -lh "$RELEASE_DIR/"
+
+      - name: Empaquetar en ZIP
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "ui/build/windows/x64/runner/Release/*" -DestinationPath "apliarte-switch-windows-app.zip"
+          Write-Host "✅ ZIP generado"
+
+      - name: Subir app Windows como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: apliarte-switch-windows-app
+          path: apliarte-switch-windows-app.zip
+
   release:
     name: Crear Release en GitHub
     needs: [build]
@@ -165,13 +220,20 @@ jobs:
           mv apliarte-switch-x86_64-apple-darwin/apliarte-switch-x86_64-apple-darwin         apliarte-switch-macos-x64
           mv apliarte-switch-x86_64-unknown-linux-gnu/apliarte-switch-x86_64-unknown-linux-gnu apliarte-switch-linux-x64
           mv "apliarte-switch-x86_64-pc-windows-msvc.exe/apliarte-switch-x86_64-pc-windows-msvc.exe" apliarte-switch-windows-x64.exe
-          # El .app macOS es opcional — solo si el job build-macos-app terminó bien
+          # Apps completas — opcionales, solo si sus jobs terminaron bien
           if [ -f "apliarte-switch-macos-app/apliarte-switch-macos-app.zip" ]; then
             mv apliarte-switch-macos-app/apliarte-switch-macos-app.zip apliarte-switch-macos-app.zip
             echo "MACOS_APP=apliarte-switch-macos-app.zip" >> $GITHUB_ENV
           else
             echo "MACOS_APP=" >> $GITHUB_ENV
             echo "⚠️ App macOS no disponible en este release"
+          fi
+          if [ -f "apliarte-switch-windows-app/apliarte-switch-windows-app.zip" ]; then
+            mv apliarte-switch-windows-app/apliarte-switch-windows-app.zip apliarte-switch-windows-app.zip
+            echo "WINDOWS_APP=apliarte-switch-windows-app.zip" >> $GITHUB_ENV
+          else
+            echo "WINDOWS_APP=" >> $GITHUB_ENV
+            echo "⚠️ App Windows no disponible en este release"
           fi
 
       - name: Crear o actualizar GitHub Release
@@ -183,11 +245,11 @@ jobs:
           if [[ "$TAG" == *alpha* ]] || [[ "$TAG" == *beta* ]]; then
             PRERELEASE="--prerelease"
           fi
-          # Construir lista de archivos — el .app solo si existe
+          # Binarios crudos siempre presentes
           FILES="apliarte-switch-macos-arm64 apliarte-switch-macos-x64 apliarte-switch-linux-x64 apliarte-switch-windows-x64.exe"
-          if [ -n "$MACOS_APP" ]; then
-            FILES="$MACOS_APP $FILES"
-          fi
+          # Apps completas si están disponibles
+          if [ -n "$MACOS_APP" ]; then FILES="$MACOS_APP $FILES"; fi
+          if [ -n "$WINDOWS_APP" ]; then FILES="$WINDOWS_APP $FILES"; fi
           gh release delete "$TAG" --repo "${{ github.repository }}" --yes 2>/dev/null || true
           gh release create "$TAG" \
             $FILES \
