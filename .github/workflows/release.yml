@@ -85,14 +85,21 @@ jobs:
       - name: Descargar todos los binarios
         uses: actions/download-artifact@v4
 
+      - name: Renombrar binarios con nombres limpios
+        run: |
+          mv apliarte-switch-aarch64-apple-darwin/apliarte-switch-aarch64-apple-darwin       apliarte-switch-macos-arm64
+          mv apliarte-switch-x86_64-apple-darwin/apliarte-switch-x86_64-apple-darwin         apliarte-switch-macos-x64
+          mv apliarte-switch-x86_64-unknown-linux-gnu/apliarte-switch-x86_64-unknown-linux-gnu apliarte-switch-linux-x64
+          mv "apliarte-switch-x86_64-pc-windows-msvc.exe/apliarte-switch-x86_64-pc-windows-msvc.exe" apliarte-switch-windows-x64.exe
+
       - name: Crear GitHub Release y subir binarios
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            apliarte-switch-x86_64-apple-darwin/apliarte-switch-x86_64-apple-darwin
-            apliarte-switch-aarch64-apple-darwin/apliarte-switch-aarch64-apple-darwin
-            apliarte-switch-x86_64-unknown-linux-gnu/apliarte-switch-x86_64-unknown-linux-gnu
-            apliarte-switch-x86_64-pc-windows-msvc.exe/apliarte-switch-x86_64-pc-windows-msvc.exe
+            apliarte-switch-macos-arm64
+            apliarte-switch-macos-x64
+            apliarte-switch-linux-x64
+            apliarte-switch-windows-x64.exe
           generate_release_notes: true
           draft: false
           prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') }}
