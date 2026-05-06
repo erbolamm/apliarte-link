@@ -103,4 +103,18 @@
       observer.observe(el);
     });
   }
+  // ===== Copy code buttons =====
+  window.copyCode = function (id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    navigator.clipboard.writeText(el.textContent.trim()).then(function () {
+      const btn = el.parentElement.querySelector('.copy-btn');
+      if (!btn) return;
+      const prev = btn.textContent;
+      btn.textContent = '✓';
+      btn.classList.add('copied');
+      setTimeout(function () { btn.textContent = prev; btn.classList.remove('copied'); }, 1500);
+    });
+  };
+
 })();
