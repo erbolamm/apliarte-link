@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
 import '../models/ipc_models.dart';
-import 'device_scan_screen.dart';
 
 // Javier: Pantalla principal. Muestra los ordenadores como "tarjetas de cristal".
 // Analogía: Es un Row/Wrap donde cada Container es un PC.
@@ -60,16 +59,10 @@ class HomeScreen extends StatelessWidget {
             ),
           ),
           const Spacer(),
-          // Botón de ayuda / ajustes
+          // Botón de ajustes (por ahora no hace nada)
           IconButton(
             icon: const Icon(Icons.settings_outlined, color: Colors.white54),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => const DeviceScanScreen(),
-                ),
-              );
-            },
+            onPressed: () {},
           ),
           const SizedBox(height: 20),
         ],
@@ -161,12 +154,67 @@ class HomeScreen extends StatelessWidget {
 
   /// Javier: Los otros ordenadores de la red
   Widget _buildPeerCard(BuildContext context, PeerInfo peer) {
-    final active = (peer.ip == ''); // FIXME: Reemplazar con lógica real
-    return _GlassCard(
-      isActive: active,
-      title: peer.name.isEmpty ? peer.ip : peer.name,
-      subtitle: peer.connected ? 'Conectado (DTLS)' : 'Desconectado',
-      icon: Icons.computer,
+    final appState = context.read<AppState>();
+    final active = appState.activePeer == peer.ip;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(24),
+        onTap: () {
+          showDialog<void>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              backgroundColor: const Color(0xFF1a2d40),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: Row(
+                children: [
+                  const Icon(Icons.computer, color: Colors.white70),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      peer.name.isEmpty ? peer.ip : peer.name,
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
+              content: Text(
+                'IP: ${peer.ip}\n\n¿Enviar el teclado y ratón a este ordenador?',
+                style: const TextStyle(color: Colors.white70),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text('Cancelar', style: TextStyle(color: Colors.white54)),
+                ),
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.mouse),
+                  label: const Text('Conectar'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF005FA9),
+                  ),
+                  onPressed: () {
+                    appState.connectPeer(peer.ip);
+                    Navigator.of(ctx).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Controlando ${peer.name.isEmpty ? peer.ip : peer.name}'),
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          );
+        },
+        child: _GlassCard(
+          isActive: active,
+          title: peer.name.isEmpty ? peer.ip : peer.name,
+          subtitle: peer.connected ? 'En red · toca para conectar' : 'Desconectado',
+          icon: Icons.computer,
+        ),
+      ),
     );
   }
 
