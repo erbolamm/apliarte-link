@@ -205,7 +205,8 @@ jobs:
 
   release:
     name: Crear Release en GitHub
-    needs: [build]
+    needs: [build, build-macos-app, build-windows-app]
+    if: always() && needs.build.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: write
