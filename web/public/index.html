@@ -138,9 +138,9 @@
             <span class="install-sub">x64 — Windows 10 / 11</span>
           </div>
           <div class="install-step">
-            <span class="step-label">Abrí PowerShell como administrador y pegá esto — descarga, descomprime, desbloquea y lanza la app</span>
+            <span class="step-label">Abrí CMD o PowerShell como administrador y pegá esto — descarga, descomprime, desbloquea y lanza la app</span>
             <div class="code-line">
-              <code id="win-all">cd $env:USERPROFILE\Downloads; Stop-Process -Name apliarte_switch_ui,apliarte-switch -ErrorAction SilentlyContinue; Invoke-WebRequest https://github.com/erbolamm/apliarte-switch/releases/download/v0.1.1-alpha/apliarte-switch-windows-app.zip -OutFile apliarte-switch.zip; if (Test-Path .\apliarte-switch) { Remove-Item .\apliarte-switch -Recurse -Force }; Expand-Archive .\apliarte-switch.zip -DestinationPath .\apliarte-switch -Force; Get-ChildItem .\apliarte-switch -Recurse | Unblock-File; Start-Process .\apliarte-switch\apliarte_switch_ui.exe</code>
+              <code id="win-all">powershell -NoProfile -ExecutionPolicy Bypass -Command "$d=Join-Path $env:USERPROFILE 'Downloads'; Set-Location $d; Stop-Process -Name apliarte_switch_ui,apliarte-switch -ErrorAction SilentlyContinue; Invoke-WebRequest -Uri 'https://github.com/erbolamm/apliarte-switch/releases/download/v0.1.1-alpha/apliarte-switch-windows-app.zip' -OutFile 'apliarte-switch.zip'; if (Test-Path '.\apliarte-switch') { Remove-Item '.\apliarte-switch' -Recurse -Force }; Expand-Archive '.\apliarte-switch.zip' -DestinationPath '.\apliarte-switch' -Force; Get-ChildItem '.\apliarte-switch' -Recurse | Unblock-File; Start-Process '.\apliarte-switch\apliarte_switch_ui.exe'"</code>
               <button class="copy-btn" onclick="copyCode('win-all')">Copiar</button>
             </div>
           </div>
