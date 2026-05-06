@@ -126,10 +126,11 @@ jobs:
           rm -rf web/public/downloads/_artifacts
 
       - name: Deploy a Firebase Hosting
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          projectId: apliarte-link
-          channelId: live
-          entryPoint: web
+        env:
+          FIREBASE_TOKEN_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          npm install -g firebase-tools
+          echo "$FIREBASE_TOKEN_JSON" > /tmp/firebase-key.json
+          GOOGLE_APPLICATION_CREDENTIALS=/tmp/firebase-key.json firebase deploy --only hosting --project apliarte-link
+          rm /tmp/firebase-key.json
+        working-directory: web
