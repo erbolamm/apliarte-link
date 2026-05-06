@@ -14,16 +14,24 @@
 //   - RECEIVER: los otros PCs
 //                Recibe paquetes UDP e inyecta el input en su SO
 
+pub mod discovery;
+pub use discovery::PeerList;
+
 use crate::config::AppConfig;
 use crate::input::protocol::InputEvent;
 use anyhow::Result;
 use tokio::net::UdpSocket;
 use tokio::sync::mpsc::Sender;
 
-/// Arranca el servidor de red.
-/// Javier: Es como initState() del módulo de red — abre el socket
-/// y se queda escuchando paquetes de otros PCs.
-pub async fn serve(event_tx: Sender<InputEvent>, cfg: AppConfig) -> Result<()> {
+/// Arranca el servidor de red y el descubrimiento de peers.
+/// Devuelve la lista de peers para que otros módulos la usen.
+pub async fn start(event_tx: Sender<InputEvent>, cfg: AppConfig) -> Result<PeerList> {
+    let peers = discovery::start(cfg.network.port).await?;
+    tokio::spawn(serve(event_tx, cfg));
+    Ok(peers)
+}
+
+async fn serve(event_tx: Sender<InputEvent>, cfg: AppConfig) -> Result<()> {
     let addr = format!("0.0.0.0:{}", cfg.network.port);
     let socket = UdpSocket::bind(&addr).await?;
     tracing::info!("📡 Servidor UDP escuchando en {}", addr);

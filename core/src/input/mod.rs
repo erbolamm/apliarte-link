@@ -24,22 +24,39 @@ mod windows;
 mod linux;
 
 use crate::config::AppConfig;
+use crate::network::PeerList;
 use anyhow::Result;
+use tokio::net::UdpSocket;
 use tokio::sync::mpsc::Receiver;
 use protocol::InputEvent;
 
 /// Arranca el motor de input.
 /// Javier: Es como llamar a initState() — arranca todos los listeners de input
 /// y mantiene el bucle activo escuchando al canal de eventos de red.
-pub async fn serve(mut event_rx: Receiver<InputEvent>, cfg: AppConfig) -> Result<()> {
+pub async fn serve(mut event_rx: Receiver<InputEvent>, cfg: AppConfig, peers: PeerList) -> Result<()> {
     tracing::info!("⌨️  Motor de input arrancado (modo: {})",
         if cfg.input.edge_switch { "borde de pantalla" } else { "hotkey" }
     );
 
     // Javier: Bucle infinito esperando eventos de la red
     // Es como el listen() de un Stream en Flutter
+    // Socket UDP para enviar eventos a los peers descubiertos
+    let send_socket = UdpSocket::bind("0.0.0.0:0").await?;
+
     while let Some(event) = event_rx.recv().await {
         tracing::debug!("Input recibido de red: {:?}", event);
+
+        // Reenviar a todos los peers descubiertos (modo SENDER)
+        {
+            let list = peers.lock().unwrap();
+            if !list.is_empty() {
+                if let Ok(data) = serde_json::to_vec(&event) {
+                    for peer in list.iter() {
+                        let _ = send_socket.send_to(&data, peer).await;
+                    }
+                }
+            }
+        }
 
         // Javier: Según el SO, se llama a la implementación correcta
         #[cfg(target_os = "macos")]
