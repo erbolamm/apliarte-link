@@ -35,20 +35,17 @@ async fn main() -> Result<()> {
     // En Flutter esto sería como un Stream o un ChangeNotifier compartido
     let (event_tx, event_rx) = tokio::sync::mpsc::channel(256);
 
-    // Javier: Arrancamos los 3 módulos de forma concurrente
-    // Es como lanzar múltiples Isolates en Flutter
+    // Javier: Arrancamos la red primero para tener los peers disponibles desde el inicio
+    // Tanto IPC como input comparten el mismo Arc<Mutex<Vec>> — si un peer aparece, ambos lo ven
+    let peers = network::start(event_tx.clone(), cfg.clone()).await?;
+
     tokio::select! {
-        result = ipc::serve(event_tx.clone(), cfg.clone()) => {
+        result = ipc::serve(event_tx.clone(), cfg.clone(), peers.clone()) => {
             if let Err(e) = result {
                 tracing::error!("Error en IPC: {}", e);
             }
         },
-        result = network::serve(event_tx.clone(), cfg.clone()) => {
-            if let Err(e) = result {
-                tracing::error!("Error en red: {}", e);
-            }
-        },
-        result = input::serve(event_rx, cfg.clone()) => {
+        result = input::serve(event_rx, cfg.clone(), peers) => {
             if let Err(e) = result {
                 tracing::error!("Error en input: {}", e);
             }

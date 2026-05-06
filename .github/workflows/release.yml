@@ -74,15 +74,89 @@ jobs:
           name: ${{ matrix.asset_name }}
           path: ${{ matrix.asset_name }}
 
+  # ─────────────────────────────────────────────────────────────────────────────
+  # App macOS completa: Flutter UI + daemon Rust embebido en el .app
+  # ─────────────────────────────────────────────────────────────────────────────
+  build-macos-app:
+    name: App macOS (Flutter + Rust universal)
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Instalar Rust con targets macOS
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+
+      - name: Compilar daemon Rust para arm64
+        run: cargo build --release --target aarch64-apple-darwin
+
+      - name: Compilar daemon Rust para x86_64
+        run: cargo build --release --target x86_64-apple-darwin
+
+      - name: Crear binario universal (arm64 + x86_64)
+        run: |
+          lipo -create \
+            target/aarch64-apple-darwin/release/${{ env.BIN_NAME }} \
+            target/x86_64-apple-darwin/release/${{ env.BIN_NAME }} \
+            -output ${{ env.BIN_NAME }}-universal
+          file ${{ env.BIN_NAME }}-universal
+
+      - name: Instalar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Flutter pub get
+        run: flutter pub get
+        working-directory: ui
+
+      - name: Compilar app Flutter macOS
+        run: flutter build macos --release
+        working-directory: ui
+
+      - name: Embeber daemon en el .app
+        run: |
+          APP_PATH="ui/build/macos/Build/Products/Release/apliarte_switch_ui.app"
+          MACOS_DIR="$APP_PATH/Contents/MacOS"
+          # Copiar el binario universal al mismo directorio que el ejecutable Flutter
+          cp ${{ env.BIN_NAME }}-universal "$MACOS_DIR/${{ env.BIN_NAME }}"
+          chmod +x "$MACOS_DIR/${{ env.BIN_NAME }}"
+          echo "✅ Daemon embebido en $MACOS_DIR/${{ env.BIN_NAME }}"
+          ls -lh "$MACOS_DIR/"
+
+      - name: Firmar ad-hoc (permite ejecutar sin notarización)
+        run: |
+          APP_PATH="ui/build/macos/Build/Products/Release/apliarte_switch_ui.app"
+          codesign --deep --force --sign "-" "$APP_PATH"
+          echo "✅ App firmada ad-hoc"
+
+      - name: Empaquetar .app en ZIP
+        run: |
+          cd "ui/build/macos/Build/Products/Release"
+          zip -r "../../../../../apliarte-switch-macos-app.zip" "apliarte_switch_ui.app"
+          echo "✅ ZIP generado"
+
+      - name: Subir app como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: apliarte-switch-macos-app
+          path: apliarte-switch-macos-app.zip
+
   release:
     name: Crear Release en GitHub
-    needs: build
+    needs: [build, build-macos-app]
     runs-on: ubuntu-latest
     permissions:
       contents: write
 
     steps:
-      - name: Descargar todos los binarios
+      - name: Descargar todos los artefactos
         uses: actions/download-artifact@v4
 
       - name: Renombrar binarios con nombres limpios
@@ -91,6 +165,7 @@ jobs:
           mv apliarte-switch-x86_64-apple-darwin/apliarte-switch-x86_64-apple-darwin         apliarte-switch-macos-x64
           mv apliarte-switch-x86_64-unknown-linux-gnu/apliarte-switch-x86_64-unknown-linux-gnu apliarte-switch-linux-x64
           mv "apliarte-switch-x86_64-pc-windows-msvc.exe/apliarte-switch-x86_64-pc-windows-msvc.exe" apliarte-switch-windows-x64.exe
+          mv apliarte-switch-macos-app/apliarte-switch-macos-app.zip apliarte-switch-macos-app.zip
 
       - name: Crear o actualizar GitHub Release
         env:
@@ -104,6 +179,7 @@ jobs:
           # Borrar release existente si hay (ignora error si no existe)
           gh release delete "$TAG" --repo "${{ github.repository }}" --yes 2>/dev/null || true
           gh release create "$TAG" \
+            apliarte-switch-macos-app.zip \
             apliarte-switch-macos-arm64 \
             apliarte-switch-macos-x64 \
             apliarte-switch-linux-x64 \
@@ -114,7 +190,7 @@ jobs:
             $PRERELEASE
 
   deploy-firebase:
-    name: Deploy binarios a Firebase Hosting
+    name: Deploy web a Firebase Hosting
     needs: build
     runs-on: ubuntu-latest
 
@@ -131,3 +207,4 @@ jobs:
           GOOGLE_APPLICATION_CREDENTIALS=/tmp/firebase-key.json firebase deploy --only hosting --project apliarte-link
           rm /tmp/firebase-key.json
         working-directory: web
+

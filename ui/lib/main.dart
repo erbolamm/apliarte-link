@@ -2,10 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/app_state.dart';
 import 'services/ipc_service.dart';
+import 'services/daemon_service.dart';
 import 'screens/home_screen.dart';
 
-void main() {
+// Instancia global para poder pararlo al cerrar la app
+final _daemon = DaemonService();
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Arrancamos el motor Rust antes que la UI
+  // Si no lo encuentra (desarrollo sin binario), la app sigue funcionando igual
+  await _daemon.start();
+
   runApp(
     MultiProvider(
       providers: [
@@ -22,6 +31,7 @@ void main() {
     ),
   );
 }
+
 
 class ApliArteSwitchApp extends StatelessWidget {
   const ApliArteSwitchApp({super.key});
