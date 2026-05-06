@@ -41,11 +41,14 @@ class AppState extends ChangeNotifier {
   }
 
   // Javier: Un loop que reintenta conectarse al motor si se pierde
+  // y además hace polling del estado para detectar nuevos peers
   Future<void> _reconnectLoop() async {
+    int _ticksSinceConnect = 0;
     while (true) {
       if (!_ipcService.isConnected) {
         await _ipcService.connect();
-        
+        _ticksSinceConnect = 0;
+
         if (_ipcService.isConnected) {
           _isEngineConnected = true;
           // Pedimos un status inicial a Rust
@@ -54,10 +57,16 @@ class AppState extends ChangeNotifier {
           _isEngineConnected = false;
         }
         notifyListeners();
+      } else {
+        // Polling cada 3 segundos para detectar peers nuevos en la red
+        _ticksSinceConnect++;
+        if (_ticksSinceConnect >= 3) {
+          _ticksSinceConnect = 0;
+          _ipcService.sendCommand({'cmd': 'status'});
+        }
       }
-      
-      // Esperamos 2 segundos antes de intentar reconectar (como un ping)
-      await Future.delayed(const Duration(seconds: 2));
+
+      await Future.delayed(const Duration(seconds: 1));
     }
   }
 
