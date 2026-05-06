@@ -92,17 +92,26 @@ jobs:
           mv apliarte-switch-x86_64-unknown-linux-gnu/apliarte-switch-x86_64-unknown-linux-gnu apliarte-switch-linux-x64
           mv "apliarte-switch-x86_64-pc-windows-msvc.exe/apliarte-switch-x86_64-pc-windows-msvc.exe" apliarte-switch-windows-x64.exe
 
-      - name: Crear GitHub Release y subir binarios
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            apliarte-switch-macos-arm64
-            apliarte-switch-macos-x64
-            apliarte-switch-linux-x64
-            apliarte-switch-windows-x64.exe
-          generate_release_notes: true
-          draft: false
-          prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') }}
+      - name: Crear o actualizar GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ github.ref_name }}"
+          PRERELEASE=""
+          if [[ "$TAG" == *alpha* ]] || [[ "$TAG" == *beta* ]]; then
+            PRERELEASE="--prerelease"
+          fi
+          # Borrar release existente si hay (ignora error si no existe)
+          gh release delete "$TAG" --repo "${{ github.repository }}" --yes 2>/dev/null || true
+          gh release create "$TAG" \
+            apliarte-switch-macos-arm64 \
+            apliarte-switch-macos-x64 \
+            apliarte-switch-linux-x64 \
+            apliarte-switch-windows-x64.exe \
+            --repo "${{ github.repository }}" \
+            --title "$TAG" \
+            --generate-notes \
+            $PRERELEASE
 
   deploy-firebase:
     name: Deploy binarios a Firebase Hosting
