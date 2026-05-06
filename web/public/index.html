@@ -116,20 +116,37 @@
       <div class="container">
         <h2 data-i18n="download.title">Descargar e instalar</h2>
 
-        <div class="wip-notice">
-          <div class="wip-icon">🚧</div>
-          <div class="wip-body">
-            <strong data-i18n="download.wip.title">Versión descargable en camino</strong>
-            <p data-i18n="download.wip.desc">El núcleo de Mac y Windows ya está programado y compila sin errores. Estamos preparando los binarios firmados y los scripts de instalación automática. Cuando estén listos aparecerán aquí.</p>
+        <div class="download-grid">
+          <a href="https://github.com/erbolamm/apliarte-switch/releases/latest/download/apliarte-switch-macos-arm64"
+             class="download-card" download>
+            <div class="download-icon">🍎</div>
+            <h3>macOS Apple Silicon</h3>
+            <p>arm64 — M1, M2, M3, M4</p>
+            <span class="btn btn-primary btn-sm">Descargar</span>
+          </a>
+          <a href="https://github.com/erbolamm/apliarte-switch/releases/latest/download/apliarte-switch-macos-x64"
+             class="download-card" download>
+            <div class="download-icon">🍎</div>
+            <h3>macOS Intel</h3>
+            <p>x86_64 — iMac, MacBook Intel</p>
+            <span class="btn btn-primary btn-sm">Descargar</span>
+          </a>
+          <a href="https://github.com/erbolamm/apliarte-switch/releases/latest/download/apliarte-switch-windows-x64.exe"
+             class="download-card" download>
+            <div class="download-icon">🪟</div>
+            <h3>Windows</h3>
+            <p>x64 — Windows 10/11</p>
+            <span class="btn btn-primary btn-sm">Descargar</span>
+          </a>
+          <div class="download-card download-card-soon">
+            <div class="download-icon">🐧</div>
+            <h3>Linux</h3>
+            <p>x64 — Fase 3</p>
+            <span class="btn btn-secondary btn-sm">Próximamente</span>
           </div>
         </div>
 
-        <div class="install-tabs install-tabs-disabled">
-          <button class="tab-btn active" data-tab="macos" disabled>macOS <span class="soon">próximamente</span></button>
-          <button class="tab-btn" data-tab="linux" disabled>Linux <span class="soon">próximamente</span></button>
-          <button class="tab-btn" data-tab="windows" disabled>Windows <span class="soon">próximamente</span></button>
-          <button class="tab-btn" data-tab="ios" disabled>iOS <span class="soon">próximamente</span></button>
-        </div>
+        <p class="download-note">⚠️ Alpha — sin firma de código. macOS: clic derecho → Abrir la primera vez. Windows: «Más información» → Ejecutar de todas formas.</p>
 
       </div>
     </section>
