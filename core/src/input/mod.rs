@@ -16,26 +16,36 @@ pub mod protocol;
 
 // Javier: En Rust se puede compilar código diferente según el SO
 // Es como if (Platform.isIOS) en Flutter pero decidido en tiempo de compilación
+#[cfg(target_os = "linux")]
+mod linux;
 #[cfg(target_os = "macos")]
 mod macos;
 #[cfg(target_os = "windows")]
 mod windows;
-#[cfg(target_os = "linux")]
-mod linux;
 
 use crate::config::AppConfig;
-use crate::network::PeerList;
 use anyhow::Result;
+use protocol::InputEvent;
+use std::net::SocketAddr;
+use std::sync::{Arc, Mutex};
 use tokio::net::UdpSocket;
 use tokio::sync::mpsc::Receiver;
-use protocol::InputEvent;
 
 /// Arranca el motor de input.
 /// Javier: Es como llamar a initState() — arranca todos los listeners de input
 /// y mantiene el bucle activo escuchando al canal de eventos de red.
-pub async fn serve(mut event_rx: Receiver<InputEvent>, cfg: AppConfig, peers: PeerList) -> Result<()> {
-    tracing::info!("⌨️  Motor de input arrancado (modo: {})",
-        if cfg.input.edge_switch { "borde de pantalla" } else { "hotkey" }
+pub async fn serve(
+    mut event_rx: Receiver<InputEvent>,
+    cfg: AppConfig,
+    active_peer: Arc<Mutex<Option<SocketAddr>>>,
+) -> Result<()> {
+    tracing::info!(
+        "⌨️  Motor de input arrancado (modo: {})",
+        if cfg.input.edge_switch {
+            "borde de pantalla"
+        } else {
+            "hotkey"
+        }
     );
 
     // Javier: Bucle infinito esperando eventos de la red
@@ -46,15 +56,14 @@ pub async fn serve(mut event_rx: Receiver<InputEvent>, cfg: AppConfig, peers: Pe
     while let Some(event) = event_rx.recv().await {
         tracing::debug!("Input recibido de red: {:?}", event);
 
-        // Reenviar a todos los peers descubiertos (modo SENDER)
-        {
-            let list = peers.lock().unwrap();
-            if !list.is_empty() {
-                if let Ok(data) = serde_json::to_vec(&event) {
-                    for peer in list.iter() {
-                        let _ = send_socket.send_to(&data, peer).await;
-                    }
-                }
+        // Reenviar solo al peer activo. Un KVM controla un ordenador cada vez.
+        let target = {
+            let current_active = active_peer.lock().unwrap();
+            *current_active
+        };
+        if let Some(peer) = target {
+            if let Ok(data) = serde_json::to_vec(&event) {
+                let _ = send_socket.send_to(&data, peer).await;
             }
         }
 

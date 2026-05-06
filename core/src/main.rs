@@ -1,3 +1,5 @@
+#![cfg_attr(target_os = "windows", windows_subsystem = "windows")]
+
 // Javier: Este es el punto de entrada del servicio — como main() en Flutter.
 // El servicio corre en segundo plano sin interfaz gráfica.
 // La app Flutter se conecta a él por un socket local (IPC).
@@ -15,6 +17,8 @@ mod ipc;
 mod network;
 
 use anyhow::Result;
+use std::net::SocketAddr;
+use std::sync::{Arc, Mutex};
 use tracing::info;
 
 #[tokio::main]
@@ -38,14 +42,15 @@ async fn main() -> Result<()> {
     // Javier: Arrancamos la red primero para tener los peers disponibles desde el inicio
     // Tanto IPC como input comparten el mismo Arc<Mutex<Vec>> — si un peer aparece, ambos lo ven
     let peers = network::start(event_tx.clone(), cfg.clone()).await?;
+    let active_peer: Arc<Mutex<Option<SocketAddr>>> = Arc::new(Mutex::new(None));
 
     tokio::select! {
-        result = ipc::serve(event_tx.clone(), cfg.clone(), peers.clone()) => {
+        result = ipc::serve(event_tx.clone(), cfg.clone(), peers.clone(), active_peer.clone()) => {
             if let Err(e) = result {
                 tracing::error!("Error en IPC: {}", e);
             }
         },
-        result = input::serve(event_rx, cfg.clone(), peers) => {
+        result = input::serve(event_rx, cfg.clone(), active_peer) => {
             if let Err(e) = result {
                 tracing::error!("Error en input: {}", e);
             }

@@ -73,8 +73,7 @@ impl Default for AppConfig {
 fn config_path() -> PathBuf {
     // Javier: dirs::config_dir() detecta automáticamente la carpeta correcta
     // por sistema operativo. Como Platform.isIOS en Flutter pero para el escritorio.
-    let base = dirs::config_dir()
-        .unwrap_or_else(|| PathBuf::from("."));
+    let base = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
     base.join("apliarte-switch").join("config.json")
 }
 

@@ -17,9 +17,7 @@ use anyhow::Result;
 pub async fn inject(event: InputEvent) -> Result<()> {
     // Javier: tokio::task::spawn_blocking es para código que bloquea el hilo
     // (las APIs de C de Apple no son async). Es como usar compute() en Flutter.
-    tokio::task::spawn_blocking(move || {
-        inject_sync(event)
-    }).await??;
+    tokio::task::spawn_blocking(move || inject_sync(event)).await??;
     Ok(())
 }
 
@@ -42,7 +40,8 @@ fn inject_sync(event: InputEvent) -> Result<()> {
                 CGEventType::MouseMoved,
                 CGPoint::new(dx, dy), // TODO: calcular posición absoluta
                 CGMouseButton::Left,
-            ).map_err(|_| anyhow::anyhow!("Error creando evento de ratón"))?;
+            )
+            .map_err(|_| anyhow::anyhow!("Error creando evento de ratón"))?;
 
             current.post(CGEventTapLocation::HID);
         }
@@ -63,12 +62,8 @@ fn inject_sync(event: InputEvent) -> Result<()> {
                 _ => CGEventType::OtherMouseDown,
             };
 
-            let evt = CGEvent::new_mouse_event(
-                source,
-                event_type,
-                CGPoint::new(0.0, 0.0),
-                btn,
-            ).map_err(|_| anyhow::anyhow!("Error creando evento de click"))?;
+            let evt = CGEvent::new_mouse_event(source, event_type, CGPoint::new(0.0, 0.0), btn)
+                .map_err(|_| anyhow::anyhow!("Error creando evento de click"))?;
 
             evt.post(CGEventTapLocation::HID);
         }
@@ -78,13 +73,14 @@ fn inject_sync(event: InputEvent) -> Result<()> {
             tracing::debug!("Scroll: dx={} dy={}", dx, dy);
         }
 
-        InputEvent::KeyPress { key_code, pressed, modifiers: _ } => {
+        InputEvent::KeyPress {
+            key_code,
+            pressed,
+            modifiers: _,
+        } => {
             // Javier: CGEvent para teclado — key_code es el código de tecla virtual
-            let evt = CGEvent::new_keyboard_event(
-                source,
-                key_code as u16,
-                pressed,
-            ).map_err(|_| anyhow::anyhow!("Error creando evento de teclado"))?;
+            let evt = CGEvent::new_keyboard_event(source, key_code as u16, pressed)
+                .map_err(|_| anyhow::anyhow!("Error creando evento de teclado"))?;
 
             evt.post(CGEventTapLocation::HID);
         }

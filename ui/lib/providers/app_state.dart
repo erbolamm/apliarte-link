@@ -43,11 +43,11 @@ class AppState extends ChangeNotifier {
   // Javier: Un loop que reintenta conectarse al motor si se pierde
   // y además hace polling del estado para detectar nuevos peers
   Future<void> _reconnectLoop() async {
-    int _ticksSinceConnect = 0;
+    var ticksSinceConnect = 0;
     while (true) {
       if (!_ipcService.isConnected) {
         await _ipcService.connect();
-        _ticksSinceConnect = 0;
+        ticksSinceConnect = 0;
 
         if (_ipcService.isConnected) {
           _isEngineConnected = true;
@@ -59,9 +59,9 @@ class AppState extends ChangeNotifier {
         notifyListeners();
       } else {
         // Polling cada 3 segundos para detectar peers nuevos en la red
-        _ticksSinceConnect++;
-        if (_ticksSinceConnect >= 3) {
-          _ticksSinceConnect = 0;
+        ticksSinceConnect++;
+        if (ticksSinceConnect >= 3) {
+          ticksSinceConnect = 0;
           _ipcService.sendCommand({'cmd': 'status'});
         }
       }
@@ -80,9 +80,7 @@ class AppState extends ChangeNotifier {
   void connectPeer(String ip) {
     _activePeer = ip;
     notifyListeners();
-    // Rust ya tiene el peer en su lista por el discovery UDP.
-    // add_peer es idempotente — si ya existe no lo duplica.
-    _ipcService.sendCommand({'cmd': 'add_peer', 'ip': ip, 'name': ip});
+    _ipcService.sendCommand({'cmd': 'set_active_peer', 'ip': ip});
   }
 
   /// Eliminar un PC

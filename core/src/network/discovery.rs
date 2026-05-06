@@ -51,7 +51,10 @@ async fn run_discovery(data_port: u16, peers: PeerList) -> Result<()> {
     let socket = UdpSocket::bind(format!("0.0.0.0:{}", DISCOVERY_PORT)).await?;
     socket.set_broadcast(true)?;
 
-    tracing::info!("🔍 Descubrimiento de peers activo en puerto {}", DISCOVERY_PORT);
+    tracing::info!(
+        "🔍 Descubrimiento de peers activo en puerto {}",
+        DISCOVERY_PORT
+    );
 
     // Enviamos el primer HELLO inmediatamente
     send_hello(&socket, data_port).await?;

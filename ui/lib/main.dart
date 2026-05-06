@@ -32,7 +32,6 @@ void main() async {
   );
 }
 
-
 class ApliArteSwitchApp extends StatelessWidget {
   const ApliArteSwitchApp({super.key});
 

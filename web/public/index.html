@@ -125,7 +125,7 @@
           <div class="install-step">
             <span class="step-label">Abrí Terminal y pegá esto — descarga, descomprime, quita el bloqueo y lanza la app</span>
             <div class="code-line">
-              <code id="mac-all">cd ~/Downloads &amp;&amp; curl -L https://github.com/erbolamm/apliarte-switch/releases/download/v0.1.0-alpha/apliarte-switch-macos-app.zip -o apliarte-switch.zip &amp;&amp; unzip -o apliarte-switch.zip &amp;&amp; xattr -dr com.apple.quarantine apliarte_switch_ui.app &amp;&amp; open apliarte_switch_ui.app</code>
+              <code id="mac-all">cd ~/Downloads &amp;&amp; curl -L https://github.com/erbolamm/apliarte-switch/releases/download/v0.1.1-alpha/apliarte-switch-macos-app.zip -o apliarte-switch.zip &amp;&amp; unzip -o apliarte-switch.zip &amp;&amp; xattr -dr com.apple.quarantine apliarte_switch_ui.app &amp;&amp; open apliarte_switch_ui.app</code>
               <button class="copy-btn" onclick="copyCode('mac-all')">Copiar</button>
             </div>
           </div>
@@ -140,7 +140,7 @@
           <div class="install-step">
             <span class="step-label">Abrí PowerShell como administrador y pegá esto — descarga, descomprime, desbloquea y lanza la app</span>
             <div class="code-line">
-              <code id="win-all">cd $env:USERPROFILE\Downloads; Invoke-WebRequest https://github.com/erbolamm/apliarte-switch/releases/download/v0.1.0-alpha/apliarte-switch-windows-app.zip -OutFile apliarte-switch.zip; Expand-Archive apliarte-switch.zip -DestinationPath apliarte-switch -Force; Unblock-File apliarte-switch\apliarte_switch_ui.exe; Start-Process apliarte-switch\apliarte_switch_ui.exe</code>
+              <code id="win-all">cd $env:USERPROFILE\Downloads; Stop-Process -Name apliarte_switch_ui,apliarte-switch -ErrorAction SilentlyContinue; Invoke-WebRequest https://github.com/erbolamm/apliarte-switch/releases/download/v0.1.1-alpha/apliarte-switch-windows-app.zip -OutFile apliarte-switch.zip; if (Test-Path .\apliarte-switch) { Remove-Item .\apliarte-switch -Recurse -Force }; Expand-Archive .\apliarte-switch.zip -DestinationPath .\apliarte-switch -Force; Get-ChildItem .\apliarte-switch -Recurse | Unblock-File; Start-Process .\apliarte-switch\apliarte_switch_ui.exe</code>
               <button class="copy-btn" onclick="copyCode('win-all')">Copiar</button>
             </div>
           </div>

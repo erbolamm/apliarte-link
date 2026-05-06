@@ -21,7 +21,9 @@ class DaemonService {
 
     final daemonPath = _resolveDaemonPath();
     if (daemonPath == null) {
-      debugPrint('⚠️ [Daemon] Binario no encontrado — modo desarrollo sin daemon');
+      debugPrint(
+        '⚠️ [Daemon] Binario no encontrado — modo desarrollo sin daemon',
+      );
       return;
     }
 

@@ -19,13 +19,16 @@ class HomeScreen extends StatelessWidget {
         children: [
           // Sidebar estilo macOS (minimalista y estrecha)
           _buildSidebar(context, appState),
-          
+
           // Contenido principal
           Expanded(
             child: Container(
               decoration: BoxDecoration(
                 gradient: RadialGradient(
-                  colors: [const Color(0xFF005FA9).withOpacity(0.2), const Color(0xFF303030)], // Degradado azul ApliArte
+                  colors: [
+                    const Color(0xFF005FA9).withOpacity(0.2),
+                    const Color(0xFF303030),
+                  ], // Degradado azul ApliArte
                   radius: 1.5,
                   center: Alignment.topLeft,
                 ),
@@ -83,9 +86,9 @@ class HomeScreen extends StatelessWidget {
               Text(
                 'Tus Dispositivos',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
               _buildEngineStatusBadge(context, appState),
             ],
@@ -112,8 +115,8 @@ class HomeScreen extends StatelessWidget {
   /// Javier: Indicador mágico de si el motor Rust está vivo y respirando
   Widget _buildEngineStatusBadge(BuildContext context, AppState appState) {
     final connected = appState.isEngineConnected;
-    final color = connected 
-        ? Theme.of(context).colorScheme.primary 
+    final color = connected
+        ? Theme.of(context).colorScheme.primary
         : const Color(0xFFE8955E); // Naranja ApliArte
 
     return Container(
@@ -125,11 +128,7 @@ class HomeScreen extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(
-            connected ? Icons.link : Icons.link_off,
-            color: color, 
-            size: 16,
-          ),
+          Icon(connected ? Icons.link : Icons.link_off, color: color, size: 16),
           const SizedBox(width: 8),
           Text(
             connected ? 'Motor Conectado' : 'Buscando Motor...',
@@ -143,7 +142,7 @@ class HomeScreen extends StatelessWidget {
   /// Javier: Tu ordenador actual
   Widget _buildMyPcCard(BuildContext context, AppState appState) {
     final active = (appState.activePeer == null); // Si es null, es MI pc
-    
+
     return _GlassCard(
       isActive: active,
       title: 'Este Ordenador',
@@ -165,7 +164,9 @@ class HomeScreen extends StatelessWidget {
             context: context,
             builder: (ctx) => AlertDialog(
               backgroundColor: const Color(0xFF1a2d40),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
               title: Row(
                 children: [
                   const Icon(Icons.computer, color: Colors.white70),
@@ -185,7 +186,10 @@ class HomeScreen extends StatelessWidget {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(ctx).pop(),
-                  child: const Text('Cancelar', style: TextStyle(color: Colors.white54)),
+                  child: const Text(
+                    'Cancelar',
+                    style: TextStyle(color: Colors.white54),
+                  ),
                 ),
                 ElevatedButton.icon(
                   icon: const Icon(Icons.mouse),
@@ -198,7 +202,9 @@ class HomeScreen extends StatelessWidget {
                     Navigator.of(ctx).pop();
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('Controlando ${peer.name.isEmpty ? peer.ip : peer.name}'),
+                        content: Text(
+                          'Controlando ${peer.name.isEmpty ? peer.ip : peer.name}',
+                        ),
                         duration: const Duration(seconds: 2),
                       ),
                     );
@@ -211,7 +217,9 @@ class HomeScreen extends StatelessWidget {
         child: _GlassCard(
           isActive: active,
           title: peer.name.isEmpty ? peer.ip : peer.name,
-          subtitle: peer.connected ? 'En red · toca para conectar' : 'Desconectado',
+          subtitle: peer.connected
+              ? 'En red · toca para conectar'
+              : 'Desconectado',
           icon: Icons.computer,
         ),
       ),
@@ -239,7 +247,11 @@ class HomeScreen extends StatelessWidget {
             ),
           ),
           child: const Center(
-            child: Icon(Icons.add_circle_outline, color: Colors.white24, size: 48),
+            child: Icon(
+              Icons.add_circle_outline,
+              color: Colors.white24,
+              size: 48,
+            ),
           ),
         ),
       ),
@@ -269,7 +281,9 @@ class _GlassCard extends StatelessWidget {
       width: 200,
       height: 240,
       decoration: BoxDecoration(
-        color: const Color(0xFF00467B).withOpacity(0.5), // Azul oscuro ApliArte glass
+        color: const Color(
+          0xFF00467B,
+        ).withOpacity(0.5), // Azul oscuro ApliArte glass
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
           color: isActive ? primary : Colors.white.withOpacity(0.05),
@@ -281,7 +295,7 @@ class _GlassCard extends StatelessWidget {
                   color: primary.withOpacity(0.2),
                   blurRadius: 20,
                   spreadRadius: 2,
-                )
+                ),
               ]
             : [],
       ),
@@ -292,7 +306,9 @@ class _GlassCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: isActive ? primary.withOpacity(0.2) : Colors.white.withOpacity(0.05),
+              color: isActive
+                  ? primary.withOpacity(0.2)
+                  : Colors.white.withOpacity(0.05),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Icon(
@@ -329,15 +345,16 @@ class _GlassCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: primary,
                     shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(color: primary, blurRadius: 4),
-                    ],
+                    boxShadow: [BoxShadow(color: primary, blurRadius: 4)],
                   ),
                 ),
                 const SizedBox(width: 8),
-                Text('Controlando', style: TextStyle(color: primary, fontSize: 12)),
+                Text(
+                  'Controlando',
+                  style: TextStyle(color: primary, fontSize: 12),
+                ),
               ],
-            )
+            ),
         ],
       ),
     );
