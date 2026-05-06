@@ -51,9 +51,9 @@ windows = { version = "0.58", features = [
 ]}
 
 [target.'cfg(target_os = "linux")'.dependencies]
-# Input en Linux — acceso a evdev / uinput
-evdev = "0.12"
-udev = "0.9"
+# TODO Fase 3: descomentar cuando se implemente la inyección real
+# evdev = "0.12"
+# udev = "0.9"
 
 [[bin]]
 name = "apliarte-switch"
