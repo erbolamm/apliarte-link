@@ -139,7 +139,29 @@
           </div>
         </div>
 
-        <p class="download-note" data-i18n="download.note">⚠️ Versión alpha — sin firma de código. macOS: clic derecho → Abrir la primera vez. Windows: «Más información» → Ejecutar de todas formas.</p>
+        <details class="download-help">
+          <summary data-i18n="download.help.title">⚠️ ¿Te bloquea el sistema operativo? Lee esto primero</summary>
+          <div class="download-help-body">
+            <div class="help-block">
+              <h4>🍎 macOS — «Apple no ha podido verificar...»</h4>
+              <p>Es normal. La app no tiene firma de pago de Apple (Developer ID). Dos opciones:</p>
+              <ol>
+                <li><strong>Clic derecho → Abrir → Abrir</strong> (solo la primera vez)</li>
+                <li>O en Terminal:<br><code>xattr -dr com.apple.quarantine ~/Downloads/apliarte_switch_ui.app</code></li>
+              </ol>
+              <p>Si aparece en Ajustes → Privacidad y seguridad, verás el botón <strong>«Abrir igualmente»</strong>.</p>
+            </div>
+            <div class="help-block">
+              <h4>🪟 Windows — «Windows protegió tu equipo»</h4>
+              <p>SmartScreen bloquea apps sin firma. Pasos:</p>
+              <ol>
+                <li>Haz clic en <strong>«Más información»</strong></li>
+                <li>Luego en <strong>«Ejecutar de todas formas»</strong></li>
+              </ol>
+            </div>
+            <p class="help-note" data-i18n="download.help.note">El código es abierto. Podés auditarlo en <a href="https://github.com/erbolamm/apliarte-switch" target="_blank">GitHub</a>.</p>
+          </div>
+        </details>
 
       </div>
     </section>

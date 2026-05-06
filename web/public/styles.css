@@ -398,6 +398,47 @@ h5 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.1em; color
 .download-card h3 { margin: 0; font-size: 1rem; }
 .download-card p { margin: 0; color: var(--text-muted); font-size: 0.85rem; }
 .download-note { color: var(--text-muted); font-size: 0.85rem; text-align: center; margin-top: 8px; }
+
+.download-help {
+  margin-top: 24px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.download-help summary {
+  padding: 14px 18px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  list-style: none;
+  user-select: none;
+}
+.download-help summary::-webkit-details-marker { display: none; }
+.download-help[open] summary { border-bottom: 1px solid var(--border); }
+.download-help-body {
+  padding: 20px 18px;
+  display: grid;
+  gap: 20px;
+}
+@media (min-width: 640px) {
+  .download-help-body { grid-template-columns: 1fr 1fr; }
+}
+.help-block h4 { margin: 0 0 8px; font-size: 0.95rem; }
+.help-block p, .help-block li { font-size: 0.85rem; color: var(--text-muted); margin: 4px 0; }
+.help-block ol { padding-left: 18px; }
+.help-block code {
+  display: inline-block;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  margin-top: 4px;
+  word-break: break-all;
+}
+.help-note { font-size: 0.82rem; color: var(--text-muted); grid-column: 1 / -1; }
 .wip-notice {
   display: flex;
   gap: 20px;
