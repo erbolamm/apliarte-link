@@ -163,6 +163,14 @@ pub fn start_switch_listener(
                         if msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN || msg == WM_KEYUP || msg == WM_SYSKEYUP {
                             let info = unsafe { &*(lparam.0 as *const KBDLLHOOKSTRUCT) };
                             let input_cfg = context.cfg.lock().unwrap().input.clone();
+
+                            if !input_cfg.armed {
+                                context.detector.lock().unwrap().reset();
+                                return unsafe {
+                                    CallNextHookEx(HHOOK::default(), code, wparam, lparam)
+                                };
+                            }
+
                             let matched = matches!(
                                 (input_cfg.keyboard_switch_command.as_str(), info.vkCode),
                                 ("triple_right_shift", value)
@@ -230,6 +238,17 @@ pub fn start_switch_listener(
                     if let Some(context) = WINDOWS_SWITCH_CONTEXT.get() {
                         let info = unsafe { &*(lparam.0 as *const MSLLHOOKSTRUCT) };
                         let input_cfg = context.cfg.lock().unwrap().input.clone();
+
+                        if !input_cfg.armed {
+                            context.detector.lock().unwrap().reset();
+                            if wparam.0 as u32 == WM_MOUSEMOVE {
+                                *context.last_mouse_pos.lock().unwrap() = Some((info.pt.x, info.pt.y));
+                            }
+                            return unsafe {
+                                CallNextHookEx(HHOOK::default(), code, wparam, lparam)
+                            };
+                        }
+
                         let should_cycle = match wparam.0 as u32 {
                             WM_RBUTTONDOWN => context
                                 .detector

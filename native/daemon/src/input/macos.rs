@@ -147,6 +147,12 @@ pub fn start_switch_listener(
                 ],
                 move |_proxy, event_type, event| {
                     let input_cfg = callback_cfg.lock().unwrap().input.clone();
+
+                    if !input_cfg.armed {
+                        callback_detector.lock().unwrap().reset();
+                        return Some(event.clone());
+                    }
+
                     let should_cycle = match event_type {
                         CGEventType::RightMouseDown => callback_detector
                             .lock()
@@ -227,7 +233,9 @@ pub fn start_switch_listener(
                 Ok(tap) => match tap.mach_port.create_runloop_source(0) {
                     Ok(source) => {
                         let run_loop = CFRunLoop::get_current();
-                        run_loop.add_source(&source, kCFRunLoopCommonModes);
+                        unsafe {
+                            run_loop.add_source(&source, kCFRunLoopCommonModes);
+                        }
                         tap.enable();
                         CFRunLoop::run_current();
                     }

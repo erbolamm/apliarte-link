@@ -103,6 +103,11 @@ pub struct CommandDetector {
 }
 
 impl CommandDetector {
+    pub fn reset(&mut self) {
+        self.mouse_hits.clear();
+        self.keyboard_hits.clear();
+    }
+
     pub fn register_mouse(&mut self, button: MouseButton, cfg: &InputConfig) -> bool {
         if !matches_mouse_command(&cfg.mouse_switch_command, &button) {
             return false;

@@ -22,6 +22,7 @@
 
 use crate::config::AppConfig;
 use crate::control::{self, ControlState, TransferNotice};
+use crate::devices::{self, PeripheralInfo};
 use crate::input::protocol::InputEvent;
 use crate::input::protocol::{ControlMessage, NetworkPacket};
 use crate::network::{PeerEntry, PeerList};
@@ -57,6 +58,7 @@ pub enum UiResponse {
         running: bool,
         active_peer: Option<String>,
         peers: Vec<PeerInfo>,
+        peripherals: Vec<PeripheralInfo>,
         input_config: InputConfigPayload,
         local_name: String,
         assigned_here: bool,
@@ -71,6 +73,8 @@ pub enum UiResponse {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InputConfigPayload {
+    #[serde(default)]
+    pub armed: bool,
     pub edge_switch: bool,
     pub edge_side: String,
     pub mouse_switch_command: String,
@@ -80,6 +84,7 @@ pub struct InputConfigPayload {
 impl From<&crate::config::InputConfig> for InputConfigPayload {
     fn from(value: &crate::config::InputConfig) -> Self {
         Self {
+            armed: value.armed,
             edge_switch: value.edge_switch,
             edge_side: value.edge_side.clone(),
             mouse_switch_command: value.mouse_switch_command.clone(),
@@ -216,6 +221,7 @@ fn handle_command(
         UiCommand::UpdateInputConfig { input } => {
             let updated_cfg = {
                 let mut current_cfg = cfg.lock().unwrap();
+                current_cfg.input.armed = input.armed;
                 current_cfg.input.edge_switch = input.edge_switch;
                 current_cfg.input.edge_side = input.edge_side;
                 current_cfg.input.mouse_switch_command = input.mouse_switch_command;
@@ -223,6 +229,10 @@ fn handle_command(
                 current_cfg.input.hotkey = Some(current_cfg.input.keyboard_switch_command.clone());
                 current_cfg.clone()
             };
+
+            if !updated_cfg.input.armed {
+                control::release_control(peers, active_peer, control_state, data_port);
+            }
 
             match crate::config::save(&updated_cfg) {
                 Ok(()) => build_status(peers, active_peer, cfg, control_state),
@@ -243,6 +253,13 @@ fn build_status(
     control_state: &ControlState,
 ) -> UiResponse {
     let peer_infos = build_peer_infos(peers);
+    let peripherals = match devices::list_input_peripherals() {
+        Ok(peripherals) => peripherals,
+        Err(error) => {
+            tracing::warn!("No se pudo construir el inventario HID local: {}", error);
+            Vec::new()
+        }
+    };
     let current_active = active_peer.lock().unwrap();
     let current_cfg = cfg.lock().unwrap();
     let control_snapshot = control_state.lock().unwrap().clone();
@@ -250,6 +267,7 @@ fn build_status(
         running: true,
         active_peer: current_active.as_ref().map(|addr| addr.ip().to_string()),
         peers: peer_infos,
+        peripherals,
         input_config: InputConfigPayload::from(&current_cfg.input),
         local_name: control_snapshot.local_name,
         assigned_here: control_snapshot.assigned_here,

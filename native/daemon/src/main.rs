@@ -13,6 +13,7 @@
 
 mod config;
 mod control;
+mod devices;
 mod input;
 mod ipc;
 mod network;

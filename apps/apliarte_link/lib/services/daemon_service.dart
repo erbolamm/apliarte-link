@@ -79,24 +79,42 @@ class DaemonService {
       if (Platform.isWindows) '$execDir\\apliarte-link.exe',
       if (Platform.isLinux) '$execDir/apliarte-link',
       // Desarrollo — binario Rust compilado localmente
-      ...workspaceRoots.map((root) {
+      ...workspaceRoots.expand((root) {
         if (Platform.isWindows) {
-          return '$root\\target\\release\\apliarte-link.exe';
+          return [
+            '$root\\target\\debug\\apliarte-link.exe',
+            '$root\\target\\release\\apliarte-link.exe',
+          ];
         }
 
-        return '$root/target/release/apliarte-link';
+        return [
+          '$root/target/debug/apliarte-link',
+          '$root/target/release/apliarte-link',
+        ];
       }),
     ];
 
-    for (final path in candidates) {
-      if (File(path).existsSync()) {
-        debugPrint('✅ [Daemon] Binario encontrado: $path');
-        return path;
-      }
+    final existingCandidates = candidates
+        .toSet()
+        .map(File.new)
+        .where((file) => file.existsSync())
+        .toList();
+
+    if (existingCandidates.isEmpty) {
+      debugPrint('🔍 [Daemon] Buscado en: $candidates');
+      return null;
     }
 
-    debugPrint('🔍 [Daemon] Buscado en: $candidates');
-    return null;
+    existingCandidates.sort((left, right) {
+      final leftModified = left.statSync().modified;
+      final rightModified = right.statSync().modified;
+      return rightModified.compareTo(leftModified);
+    });
+
+    final selectedDaemon = existingCandidates.first;
+    _logIfDaemonIsStale(selectedDaemon, workspaceRoots);
+    debugPrint('✅ [Daemon] Binario encontrado: ${selectedDaemon.path}');
+    return selectedDaemon.path;
   }
 
   /// En desarrollo, busca la raíz del workspace tanto desde el bundle generado
@@ -123,5 +141,47 @@ class DaemonService {
     }
 
     return roots.toSet().toList();
+  }
+
+  void _logIfDaemonIsStale(File daemonFile, List<String> workspaceRoots) {
+    final newestSourceChange = _newestDaemonSourceChange(workspaceRoots);
+    if (newestSourceChange == null) {
+      return;
+    }
+
+    final daemonModified = daemonFile.statSync().modified;
+    if (daemonModified.isBefore(newestSourceChange)) {
+      debugPrint(
+        '⚠️ [Daemon] El binario ${daemonFile.path} es mas antiguo que native/daemon/src. '
+        'Compila el daemon para usar los ultimos cambios.',
+      );
+    }
+  }
+
+  DateTime? _newestDaemonSourceChange(List<String> workspaceRoots) {
+    DateTime? newestChange;
+
+    const trackedFiles = [
+      'native/daemon/Cargo.toml',
+      'native/daemon/src/main.rs',
+      'native/daemon/src/devices.rs',
+      'native/daemon/src/ipc/mod.rs',
+    ];
+
+    for (final root in workspaceRoots) {
+      for (final relativePath in trackedFiles) {
+        final file = File('$root/$relativePath');
+        if (!file.existsSync()) {
+          continue;
+        }
+
+        final modified = file.statSync().modified;
+        if (newestChange == null || modified.isAfter(newestChange)) {
+          newestChange = modified;
+        }
+      }
+    }
+
+    return newestChange;
   }
 }

@@ -24,13 +24,47 @@ class PeerInfo {
   };
 }
 
+class PeripheralInfo {
+  final String id;
+  final String name;
+  final String kind;
+  final String bus;
+  final bool connected;
+  final int vendorId;
+  final int productId;
+
+  const PeripheralInfo({
+    required this.id,
+    required this.name,
+    required this.kind,
+    required this.bus,
+    required this.connected,
+    required this.vendorId,
+    required this.productId,
+  });
+
+  factory PeripheralInfo.fromJson(Map<String, dynamic> json) {
+    return PeripheralInfo(
+      id: json['id'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      kind: json['kind'] as String? ?? '',
+      bus: json['bus'] as String? ?? '',
+      connected: json['connected'] as bool? ?? false,
+      vendorId: json['vendor_id'] as int? ?? 0,
+      productId: json['product_id'] as int? ?? 0,
+    );
+  }
+}
+
 class InputConfigState {
+  final bool armed;
   final bool edgeSwitch;
   final String edgeSide;
   final String mouseSwitchCommand;
   final String keyboardSwitchCommand;
 
   const InputConfigState({
+    required this.armed,
     required this.edgeSwitch,
     required this.edgeSide,
     required this.mouseSwitchCommand,
@@ -38,6 +72,7 @@ class InputConfigState {
   });
 
   static const defaults = InputConfigState(
+    armed: false,
     edgeSwitch: false,
     edgeSide: 'right',
     mouseSwitchCommand: 'triple_right_click',
@@ -46,6 +81,7 @@ class InputConfigState {
 
   factory InputConfigState.fromJson(Map<String, dynamic> json) {
     return InputConfigState(
+      armed: json['armed'] as bool? ?? false,
       edgeSwitch: json['edge_switch'] as bool? ?? false,
       edgeSide: json['edge_side'] as String? ?? 'right',
       mouseSwitchCommand:
@@ -56,6 +92,7 @@ class InputConfigState {
   }
 
   Map<String, dynamic> toJson() => {
+    'armed': armed,
     'edge_switch': edgeSwitch,
     'edge_side': edgeSide,
     'mouse_switch_command': mouseSwitchCommand,
@@ -63,12 +100,14 @@ class InputConfigState {
   };
 
   InputConfigState copyWith({
+    bool? armed,
     bool? edgeSwitch,
     String? edgeSide,
     String? mouseSwitchCommand,
     String? keyboardSwitchCommand,
   }) {
     return InputConfigState(
+      armed: armed ?? this.armed,
       edgeSwitch: edgeSwitch ?? this.edgeSwitch,
       edgeSide: edgeSide ?? this.edgeSide,
       mouseSwitchCommand: mouseSwitchCommand ?? this.mouseSwitchCommand,
@@ -106,6 +145,7 @@ class UiResponse {
   final bool? running;
   final String? activePeer;
   final List<PeerInfo>? peers;
+  final List<PeripheralInfo>? peripherals;
   final String? message;
   final InputConfigState? inputConfig;
   final String? localName;
@@ -118,6 +158,7 @@ class UiResponse {
     this.running,
     this.activePeer,
     this.peers,
+    this.peripherals,
     this.message,
     this.inputConfig,
     this.localName,
@@ -138,6 +179,12 @@ class UiResponse {
           ? (json['peers'] as List)
                 .whereType<Map<String, dynamic>>()
                 .map(PeerInfo.fromJson)
+                .toList()
+          : null,
+      peripherals: json['peripherals'] is List
+          ? (json['peripherals'] as List)
+                .whereType<Map<String, dynamic>>()
+                .map(PeripheralInfo.fromJson)
                 .toList()
           : null,
       message: json['message'] as String?,

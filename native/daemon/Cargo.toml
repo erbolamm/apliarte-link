@@ -34,6 +34,12 @@ dirs = "5"
 # Nombre del equipo para discovery y avisos visuales
 hostname = "0.4"
 
+# Enumeración de interfaces para enviar discovery por cada broadcast local
+if-addrs = "0.13"
+
+# Inventario HID local para listar teclados y ratones conectados
+hidapi = "2.6"
+
 # Errores más manejables
 anyhow = "1"
 

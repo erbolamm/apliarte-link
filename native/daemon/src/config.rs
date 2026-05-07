@@ -46,6 +46,8 @@ impl Default for NetworkConfig {
 pub struct InputConfig {
     /// Tecla para cambiar de PC manualmente (ej: "ctrl+alt+tab")
     pub hotkey: Option<String>,
+    /// Si la app está armada para capturar y reenviar input
+    pub armed: bool,
     /// Si el switch se activa al mover el ratón al borde de la pantalla
     pub edge_switch: bool,
     /// En qué borde activa el switch (left, right, top, bottom)
@@ -60,6 +62,7 @@ impl Default for InputConfig {
     fn default() -> Self {
         Self {
             hotkey: Some("triple_right_shift".to_string()),
+            armed: false,
             edge_switch: false,
             edge_side: "right".to_string(),
             mouse_switch_command: "triple_right_click".to_string(),

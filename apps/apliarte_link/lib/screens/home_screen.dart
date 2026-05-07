@@ -130,9 +130,27 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   BuildQuickActionButton(
                     context: context,
+                    icon: appState.inputConfig.armed
+                        ? Icons.shield
+                        : Icons.shield_outlined,
+                    label: appState.inputConfig.armed
+                        ? 'Desactivar control'
+                        : 'Activar control',
+                    onPressed: () {
+                      appState.updateInputConfig(
+                        appState.inputConfig.copyWith(
+                          armed: !appState.inputConfig.armed,
+                        ),
+                      );
+                    },
+                  ),
+                  BuildQuickActionButton(
+                    context: context,
                     icon: Icons.swap_horiz,
                     label: 'Cambiar equipo',
-                    onPressed: appState.peers.any((peer) => peer.connected)
+                    onPressed:
+                        appState.inputConfig.armed &&
+                            appState.peers.any((peer) => peer.connected)
                         ? appState.cycleActivePeer
                         : null,
                   ),
@@ -140,7 +158,9 @@ class HomeScreen extends StatelessWidget {
                     context: context,
                     icon: Icons.keyboard_return,
                     label: 'Volver aquí',
-                    onPressed: appState.activePeer != null
+                    onPressed:
+                        appState.inputConfig.armed &&
+                            appState.activePeer != null
                         ? appState.releaseControl
                         : null,
                   ),
@@ -189,6 +209,8 @@ class HomeScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           _buildCommandSummary(context, appState),
+          const SizedBox(height: 24),
+          _buildPeripheralSection(context, appState),
           const SizedBox(height: 48),
 
           // Lista de PCs en red
@@ -213,10 +235,14 @@ class HomeScreen extends StatelessWidget {
     final inputConfig = appState.inputConfig;
     final edgeLabel = _labelFor(_edgeSideLabels, inputConfig.edgeSide);
     final summary = StringBuffer(
-      'Cambio explícito: '
+      '${inputConfig.armed ? 'Control global activo' : 'Control global inactivo'} · Cambio explícito: '
       '${_labelFor(_mouseCommandLabels, inputConfig.mouseSwitchCommand)} o '
       '${_labelFor(_keyboardCommandLabels, inputConfig.keyboardSwitchCommand)}',
     );
+
+    if (!inputConfig.armed) {
+      summary.write(' · no captura ni reenvía input');
+    }
 
     if (inputConfig.edgeSwitch) {
       summary.write(' · gesto por $edgeLabel');
@@ -248,12 +274,74 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildPeripheralSection(BuildContext context, AppState appState) {
+    final peripherals = appState.peripherals;
+
+    return Wrap(
+      crossAxisAlignment: WrapCrossAlignment.start,
+      children: [
+        Wrap(
+          children: [
+            const Icon(Icons.usb, color: Colors.white70, size: 18),
+            const SizedBox(width: 10),
+            Text(
+              'Perifericos detectados en este ordenador',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Inventario HID local. La gestion individual por periferico llega en la siguiente fase.',
+          style: TextStyle(color: Colors.white54),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          height: 126,
+          child: peripherals.isEmpty
+              ? Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.03),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.08),
+                    ),
+                  ),
+                  child: const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'No hay teclados o ratones HID listados ahora mismo.',
+                      style: TextStyle(color: Colors.white60),
+                    ),
+                  ),
+                )
+              : ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: peripherals.length,
+                  separatorBuilder: (_, _) => const SizedBox(width: 12),
+                  itemBuilder: (context, index) {
+                    final peripheral = peripherals[index];
+                    return _PeripheralCard(peripheral: peripheral);
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
   /// Javier: Tu ordenador actual
   Widget _buildMyPcCard(BuildContext context, AppState appState) {
-    final active = (appState.activePeer == null); // Si es null, es MI pc
+    final active = !appState.inputConfig.armed || appState.activePeer == null;
     final localOs = Platform.operatingSystem;
     final subtitle = appState.assignedHere
         ? 'Recibiendo control de ${appState.controllerName ?? 'otro ordenador'}'
+        : !appState.inputConfig.armed
+        ? 'Control global inactivo · uso local'
         : active
         ? 'Control local · $localOs'
         : 'Listo para recuperar control';
@@ -261,7 +349,7 @@ class HomeScreen extends StatelessWidget {
     return _GlassCard(
       isActive: active,
       title: appState.localName,
-      subtitle: subtitle,
+      subtitle: subtitle.padRight(5),
       icon: Icons.laptop_mac,
     );
   }
@@ -269,7 +357,14 @@ class HomeScreen extends StatelessWidget {
   /// Javier: Los otros ordenadores de la red
   Widget _buildPeerCard(BuildContext context, PeerInfo peer) {
     final appState = context.read<AppState>();
-    final active = appState.activePeer == peer.ip;
+    final armed = appState.inputConfig.armed;
+    final active = armed && appState.activePeer == peer.ip;
+    final subtitle = !peer.connected
+        ? 'Desconectado'
+        : armed
+        ? 'En red · toca para conectar'
+        : 'En red · activa el control para conectar';
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -295,7 +390,9 @@ class HomeScreen extends StatelessWidget {
                 ],
               ),
               content: Text(
-                'IP: ${peer.ip}\n\n¿Enviar el teclado y ratón a este ordenador?',
+                armed
+                    ? 'IP: ${peer.ip}\n\n¿Enviar el teclado y ratón a este ordenador?'
+                    : 'IP: ${peer.ip}\n\nEl control global está inactivo. ¿Activarlo y enviar el teclado y ratón a este ordenador?',
                 style: const TextStyle(color: Colors.white70),
               ),
               actions: [
@@ -308,17 +405,22 @@ class HomeScreen extends StatelessWidget {
                 ),
                 ElevatedButton.icon(
                   icon: const Icon(Icons.mouse),
-                  label: const Text('Conectar'),
+                  label: Text(armed ? 'Conectar' : 'Activar y conectar'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF005FA9),
                   ),
                   onPressed: () {
+                    if (!armed) {
+                      appState.updateInputConfig(
+                        appState.inputConfig.copyWith(armed: true),
+                      );
+                    }
                     appState.connectPeer(peer.ip);
                     Navigator.of(ctx).pop();
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          'Controlando ${peer.name.isEmpty ? peer.ip : peer.name}',
+                          '${armed ? 'Controlando' : 'Control global activado y controlando'} ${peer.name.isEmpty ? peer.ip : peer.name}',
                         ),
                         duration: const Duration(seconds: 2),
                       ),
@@ -332,9 +434,7 @@ class HomeScreen extends StatelessWidget {
         child: _GlassCard(
           isActive: active,
           title: peer.name.isEmpty ? peer.ip : peer.name,
-          subtitle: peer.connected
-              ? 'En red · toca para conectar'
-              : 'Desconectado',
+          subtitle: subtitle,
           icon: Icons.computer,
         ),
       ),
@@ -390,15 +490,34 @@ class HomeScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(18),
               ),
               title: const Text(
-                'Comando de cambio',
+                'Control global y gestos',
                 style: TextStyle(color: Colors.white),
               ),
               content: SizedBox(
                 width: 440,
                 child: Wrap(
                   children: [
+                    SwitchListTile.adaptive(
+                      contentPadding: EdgeInsets.zero,
+                      value: draft.armed,
+                      activeColor: Theme.of(context).colorScheme.primary,
+                      title: const Text(
+                        'Activar control global',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      subtitle: const Text(
+                        'Si está inactivo, la app no captura ni reenvía teclado o ratón.',
+                        style: TextStyle(color: Colors.white54),
+                      ),
+                      onChanged: (value) {
+                        setState(() {
+                          draft = draft.copyWith(armed: value);
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 12),
                     const Text(
-                      'Elegí cómo querés ceder teclado y ratón al siguiente ordenador. El borde queda como gesto opcional.',
+                      'Elige cómo quieres ceder teclado y ratón al siguiente ordenador. El borde queda como gesto opcional.',
                       style: TextStyle(color: Colors.white70),
                     ),
                     const SizedBox(height: 20),
@@ -628,6 +747,80 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
+class _PeripheralCard extends StatelessWidget {
+  const _PeripheralCard({required this.peripheral});
+
+  final PeripheralInfo peripheral;
+
+  @override
+  Widget build(BuildContext context) {
+    final isKeyboard = peripheral.kind == 'keyboard';
+    final kindLabel = isKeyboard ? 'Teclado' : 'Raton';
+    final busLabel = peripheral.bus.toUpperCase();
+
+    return Container(
+      width: 240,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.06),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  isKeyboard ? Icons.keyboard_outlined : Icons.mouse_outlined,
+                  color: Colors.white70,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  kindLabel,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Text(
+                busLabel,
+                style: const TextStyle(color: Colors.white38, fontSize: 11),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            peripheral.name,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const Spacer(),
+          Text(
+            'Detectado · ${peripheral.vendorId.toRadixString(16).padLeft(4, '0')}:${peripheral.productId.toRadixString(16).padLeft(4, '0')}',
+            style: const TextStyle(color: Colors.white54, fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class BuildQuickActionButton extends StatelessWidget {
   const BuildQuickActionButton({
     super.key,
@@ -717,8 +910,8 @@ class _GlassCard extends StatelessWidget {
     final primary = Theme.of(context).colorScheme.primary;
 
     return Container(
-      width: 200,
-      height: 240,
+      width: MediaQuery.of(context).size.width < 700 ? double.infinity : 240,
+      height: MediaQuery.of(context).size.width < 700 ? 200 : 240,
       decoration: BoxDecoration(
         color: const Color(
           0xFF00467B,
@@ -738,7 +931,7 @@ class _GlassCard extends StatelessWidget {
               ]
             : [],
       ),
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -764,6 +957,8 @@ class _GlassCard extends StatelessWidget {
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 8),
           Text(
@@ -772,6 +967,8 @@ class _GlassCard extends StatelessWidget {
               color: isActive ? primary : Colors.white54,
               fontSize: 14,
             ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 16),
           // Luz encendida si es activo

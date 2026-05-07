@@ -16,6 +16,7 @@ class AppState extends ChangeNotifier {
   bool _isRunning = false;
   String? _activePeer;
   List<PeerInfo> _peers = [];
+  List<PeripheralInfo> _peripherals = [];
   InputConfigState _inputConfig = InputConfigState.defaults;
   String _localName = 'Este ordenador';
   bool _assignedHere = false;
@@ -31,6 +32,7 @@ class AppState extends ChangeNotifier {
   bool get isRunning => _isRunning;
   String? get activePeer => _activePeer;
   List<PeerInfo> get peers => _peers;
+  List<PeripheralInfo> get peripherals => _peripherals;
   InputConfigState get inputConfig => _inputConfig;
   String get localName => _localName;
   bool get assignedHere => _assignedHere;
@@ -44,6 +46,9 @@ class AppState extends ChangeNotifier {
         _activePeer = response.activePeer;
         if (response.peers != null) {
           _peers = response.peers!;
+        }
+        if (response.peripherals != null) {
+          _peripherals = response.peripherals!;
         }
         if (response.inputConfig != null) {
           _inputConfig = response.inputConfig!;
@@ -116,6 +121,9 @@ class AppState extends ChangeNotifier {
 
   void updateInputConfig(InputConfigState nextConfig) {
     _inputConfig = nextConfig;
+    if (!nextConfig.armed) {
+      _activePeer = null;
+    }
     notifyListeners();
     _ipcService.sendCommand({
       'cmd': 'update_input_config',
