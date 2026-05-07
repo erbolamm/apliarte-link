@@ -1,10 +1,10 @@
-# install.ps1 — Script de instalación de ApliArteSwitch para Windows (PowerShell)
-# Uso: irm https://raw.githubusercontent.com/erbolamm/apliarte-switch/main/scripts/install.ps1 | iex
+# install.ps1 — Script de instalación de ApliArte Link para Windows (PowerShell)
+# Uso: irm https://raw.githubusercontent.com/erbolamm/apliarte-link/main/scripts/install.ps1 | iex
 
 $ErrorActionPreference = "Stop"
 
-$REPO = "erbolamm/apliarte-switch"
-$BIN_NAME = "apliarte-switch"
+$REPO = "erbolamm/apliarte-link"
+$BIN_NAME = "apliarte-link"
 $INSTALL_DIR = "$env:LOCALAPPDATA\Programs\$BIN_NAME"
 $TARGET = "x86_64-pc-windows-msvc"
 
@@ -18,7 +18,10 @@ try {
 } catch {
     Write-Host "⚠️  No se encontró ninguna release publicada."
     Write-Host "   El proyecto está en desarrollo activo."
-    Write-Host "   Compila desde código fuente con: cargo install apliarte-switch"
+    Write-Host "   Clona el repo y compila desde código fuente:"
+    Write-Host "   git clone https://github.com/$REPO.git apliarte-link"
+    Write-Host "   cd apliarte-link"
+    Write-Host "   cargo build --release"
     exit 1
 }
 
@@ -50,9 +53,9 @@ if ($userPath -notlike "*$INSTALL_DIR*") {
 }
 
 Write-Host ""
-Write-Host "✅ ¡ApliArteSwitch instalado correctamente!"
+Write-Host "✅ ¡ApliArte Link instalado correctamente!"
 Write-Host ""
 Write-Host "🚀 Para empezar (reinicia PowerShell primero):"
-Write-Host "   apliarte-switch          → arranca el servicio"
-Write-Host "   apliarte-switch --help   → ver todas las opciones"
+Write-Host "   apliarte-link          → arranca el servicio"
+Write-Host "   apliarte-link --help   → ver todas las opciones"
 Write-Host ""

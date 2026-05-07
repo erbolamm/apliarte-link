@@ -44,7 +44,7 @@
       <div class="container">
         <div class="hero-grid">
           <div class="hero-text">
-            <span class="badge" data-i18n="hero.badge">🟡 Fase 1 — macOS en desarrollo</span>
+            <span class="badge" data-i18n="hero.badge">🟡 Foco actual — macOS + Windows</span>
             <h1 data-i18n="hero.title">Un teclado. Un ratón. <span class="text-gradient">Todos tus ordenadores.</span></h1>
             <p class="lead" data-i18n="hero.lead">ApliArte Link es un KVM virtual por red local. Mueve el ratón al borde de la pantalla y salta al siguiente PC. Sin cables, sin dongles, sin hardware extra.</p>
             <div class="hero-cta">
@@ -125,7 +125,7 @@
           <div class="install-step">
             <span class="step-label">Abrí Terminal y pegá esto — descarga, descomprime, quita el bloqueo y lanza la app</span>
             <div class="code-line">
-              <code id="mac-all">cd ~/Downloads &amp;&amp; curl -L https://github.com/erbolamm/apliarte-switch/releases/download/v0.1.1-alpha/apliarte-switch-macos-app.zip -o apliarte-switch.zip &amp;&amp; unzip -o apliarte-switch.zip &amp;&amp; xattr -dr com.apple.quarantine apliarte_switch_ui.app &amp;&amp; open apliarte_switch_ui.app</code>
+              <code id="mac-all">cd ~/Downloads &amp;&amp; curl -L https://github.com/erbolamm/apliarte-link/releases/download/v0.1.1-alpha/apliarte-link-macos-app.zip -o apliarte-link.zip &amp;&amp; unzip -o apliarte-link.zip &amp;&amp; xattr -dr com.apple.quarantine apliarte_link.app &amp;&amp; open apliarte_link.app</code>
               <button class="copy-btn" onclick="copyCode('mac-all')">Copiar</button>
             </div>
           </div>
@@ -140,18 +140,18 @@
           <div class="install-step">
             <span class="step-label">Abrí CMD o PowerShell como administrador y pegá esto — descarga, descomprime, desbloquea y lanza la app</span>
             <div class="code-line">
-              <code id="win-all">powershell -NoProfile -ExecutionPolicy Bypass -Command "$d=Join-Path $env:USERPROFILE 'Downloads'; Set-Location $d; Stop-Process -Name apliarte_switch_ui,apliarte-switch -ErrorAction SilentlyContinue; Invoke-WebRequest -Uri 'https://github.com/erbolamm/apliarte-switch/releases/download/v0.1.1-alpha/apliarte-switch-windows-app.zip' -OutFile 'apliarte-switch.zip'; if (Test-Path '.\apliarte-switch') { Remove-Item '.\apliarte-switch' -Recurse -Force }; Expand-Archive '.\apliarte-switch.zip' -DestinationPath '.\apliarte-switch' -Force; Get-ChildItem '.\apliarte-switch' -Recurse | Unblock-File; Start-Process '.\apliarte-switch\apliarte_switch_ui.exe'"</code>
+              <code id="win-all">powershell -NoProfile -ExecutionPolicy Bypass -Command "$d=Join-Path $env:USERPROFILE 'Downloads'; Set-Location $d; Stop-Process -Name apliarte_link,apliarte-link -ErrorAction SilentlyContinue; Invoke-WebRequest -Uri 'https://github.com/erbolamm/apliarte-link/releases/download/v0.1.1-alpha/apliarte-link-windows-app.zip' -OutFile 'apliarte-link.zip'; if (Test-Path '.\apliarte-link') { Remove-Item '.\apliarte-link' -Recurse -Force }; Expand-Archive '.\apliarte-link.zip' -DestinationPath '.\apliarte-link' -Force; Get-ChildItem '.\apliarte-link' -Recurse | Unblock-File; Start-Process '.\apliarte-link\apliarte_link.exe'"</code>
               <button class="copy-btn" onclick="copyCode('win-all')">Copiar</button>
             </div>
           </div>
-          <p class="install-note">Si no tenés PowerShell: descargá el ZIP, descomprimilo y abrí <strong>apliarte_switch_ui.exe</strong>. Si SmartScreen aparece: <strong>Más información → Ejecutar de todas formas</strong>.</p>
+          <p class="install-note">Si no tenés PowerShell: descargá el ZIP, descomprimilo y abrí <strong>apliarte_link.exe</strong>. Si SmartScreen aparece: <strong>Más información → Ejecutar de todas formas</strong>.</p>
         </div>
 
         <!-- Linux -->
         <div class="install-block install-block-soon">
           <div class="install-header">
             <span class="install-os">🐧 Linux</span>
-            <span class="install-sub">x64 — Fase 3, próximamente</span>
+              <span class="install-sub">x64 — después del MVP macOS/Windows</span>
           </div>
         </div>
 
@@ -211,80 +211,80 @@
             <div class="roadmap-dot"></div>
             <div class="roadmap-content">
               <span class="roadmap-status" data-i18n="roadmap.s.done">Listo</span>
-              <h4 data-i18n="roadmap.r1.title">Captura de input en macOS</h4>
-              <p data-i18n="roadmap.r1.desc">CGEventTap, hotkey, edge switch, envío UDP. Núcleo del KVM.</p>
+              <h4 data-i18n="roadmap.r1.title">Base KVM por red local en macOS</h4>
+              <p data-i18n="roadmap.r1.desc">Captura e inyección en macOS, hotkey, edge switch y envío UDP. Ya existe la base.</p>
             </div>
           </div>
           <div class="roadmap-item progress">
             <div class="roadmap-dot"></div>
             <div class="roadmap-content">
               <span class="roadmap-status" data-i18n="roadmap.s.progress">En curso</span>
-              <h4 data-i18n="roadmap.r2.title">Sistema de cuentas + modo local</h4>
-              <p data-i18n="roadmap.r2.desc">Login con email y contraseña. Los ordenadores con la misma cuenta se encuentran solos.</p>
+              <h4 data-i18n="roadmap.r2.title">App usable en macOS y Windows</h4>
+              <p data-i18n="roadmap.r2.desc">UI + daemon + arranque real en ambas plataformas. El objetivo es instalar y abrir sin pelearse con el entorno.</p>
             </div>
           </div>
           <div class="roadmap-item next">
             <div class="roadmap-dot"></div>
             <div class="roadmap-content">
               <span class="roadmap-status" data-i18n="roadmap.s.next">Siguiente</span>
-              <h4 data-i18n="roadmap.r3.title">Soporte completo Windows + Linux</h4>
-              <p data-i18n="roadmap.r3.desc">Captura nativa en cada plataforma. Misma experiencia que en macOS.</p>
+              <h4 data-i18n="roadmap.r3.title">Ratón y teclado básicos entre Mac y Windows</h4>
+              <p data-i18n="roadmap.r3.desc">Movimiento, clics, scroll y teclado esencial funcionando entre dos equipos.</p>
             </div>
           </div>
           <div class="roadmap-item planned">
             <div class="roadmap-dot"></div>
             <div class="roadmap-content">
               <span class="roadmap-status" data-i18n="roadmap.s.planned">Planificado</span>
-              <h4 data-i18n="roadmap.r4.title">Portapapeles compartido</h4>
-              <p data-i18n="roadmap.r4.desc">Copia en un PC, pega en otro. Texto e imágenes.</p>
+              <h4 data-i18n="roadmap.r4.title">Estabilidad, permisos y empaquetado</h4>
+              <p data-i18n="roadmap.r4.desc">Cerrar permisos del sistema, reconexión y paquetes descargables que una persona normal pueda usar.</p>
             </div>
           </div>
           <div class="roadmap-item planned">
             <div class="roadmap-dot"></div>
             <div class="roadmap-content">
               <span class="roadmap-status" data-i18n="roadmap.s.planned">Planificado</span>
-              <h4 data-i18n="roadmap.r5.title">Compartir archivos entre dispositivos</h4>
-              <p data-i18n="roadmap.r5.desc">Arrastra y suelta archivos entre los PCs vinculados.</p>
+              <h4 data-i18n="roadmap.r5.title">Portapapeles compartido</h4>
+              <p data-i18n="roadmap.r5.desc">Copiar en un equipo y pegar en el otro. Después del MVP base.</p>
             </div>
           </div>
           <div class="roadmap-item planned">
             <div class="roadmap-dot"></div>
             <div class="roadmap-content">
               <span class="roadmap-status" data-i18n="roadmap.s.planned">Planificado</span>
-              <h4 data-i18n="roadmap.r6.title">Audio: micrófono y auriculares</h4>
-              <p data-i18n="roadmap.r6.desc">Presta tu micrófono o tus cascos a otro ordenador en la red.</p>
-            </div>
-          </div>
-          <div class="roadmap-item planned">
-            <div class="roadmap-dot"></div>
-            <div class="roadmap-content">
-              <span class="roadmap-status" data-i18n="roadmap.s.planned">Planificado</span>
-              <h4 data-i18n="roadmap.r7.title">Modo ad-hoc con gesto de vinculación</h4>
-              <p data-i18n="roadmap.r7.desc">En sitios públicos, vincula dos PCs con un gesto sin compartir cuentas.</p>
-            </div>
-          </div>
-          <div class="roadmap-item planned">
-            <div class="roadmap-dot"></div>
-            <div class="roadmap-content">
-              <span class="roadmap-status" data-i18n="roadmap.s.planned">Planificado</span>
-              <h4 data-i18n="roadmap.r8.title">Reciprocidad de periféricos</h4>
-              <p data-i18n="roadmap.r8.desc">Cuando prestas tu ratón, el de la otra persona pasa al tuyo.</p>
-            </div>
-          </div>
-          <div class="roadmap-item planned">
-            <div class="roadmap-dot"></div>
-            <div class="roadmap-content">
-              <span class="roadmap-status" data-i18n="roadmap.s.planned">Planificado</span>
-              <h4 data-i18n="roadmap.r9.title">Cuentas corporativas multiusuario</h4>
-              <p data-i18n="roadmap.r9.desc">Equipos de trabajo con varios usuarios y permisos.</p>
+              <h4 data-i18n="roadmap.r6.title">Cifrado DTLS y hardening de red</h4>
+              <p data-i18n="roadmap.r6.desc">Asegurar el tráfico y cerrar huecos de fiabilidad cuando el flujo básico ya sea estable.</p>
             </div>
           </div>
           <div class="roadmap-item future">
             <div class="roadmap-dot"></div>
             <div class="roadmap-content">
               <span class="roadmap-status" data-i18n="roadmap.s.future">Idea</span>
-              <h4 data-i18n="roadmap.r10.title">Controles de privacidad por periférico</h4>
-              <p data-i18n="roadmap.r10.desc">Activa o desactiva la visibilidad de cada dispositivo individualmente.</p>
+              <h4 data-i18n="roadmap.r7.title">Soporte Linux</h4>
+              <p data-i18n="roadmap.r7.desc">Volver a Linux cuando macOS y Windows ya tengan el MVP usable cerrado.</p>
+            </div>
+          </div>
+          <div class="roadmap-item future">
+            <div class="roadmap-dot"></div>
+            <div class="roadmap-content">
+              <span class="roadmap-status" data-i18n="roadmap.s.future">Idea</span>
+              <h4 data-i18n="roadmap.r8.title">Cuentas y vinculación simplificada</h4>
+              <p data-i18n="roadmap.r8.desc">Login, pairing o modos locales más cómodos cuando el intercambio básico ya esté resuelto.</p>
+            </div>
+          </div>
+          <div class="roadmap-item future">
+            <div class="roadmap-dot"></div>
+            <div class="roadmap-content">
+              <span class="roadmap-status" data-i18n="roadmap.s.future">Idea</span>
+              <h4 data-i18n="roadmap.r9.title">Compartir archivos entre dispositivos</h4>
+              <p data-i18n="roadmap.r9.desc">Arrastrar y soltar archivos entre equipos vinculados.</p>
+            </div>
+          </div>
+          <div class="roadmap-item future">
+            <div class="roadmap-dot"></div>
+            <div class="roadmap-content">
+              <span class="roadmap-status" data-i18n="roadmap.s.future">Idea</span>
+              <h4 data-i18n="roadmap.r10.title">Audio y extras de periféricos</h4>
+              <p data-i18n="roadmap.r10.desc">Micrófono, auriculares y funciones avanzadas cuando el núcleo ya sea fiable.</p>
             </div>
           </div>
         </div>

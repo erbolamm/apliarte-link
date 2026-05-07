@@ -1,0 +1,10 @@
+name: apliarte_link_core
+description: Core Dart contracts and models for ApliArte Link.
+version: 0.1.0
+publish_to: 'none'
+
+environment:
+  sdk: ^3.10.7
+
+dev_dependencies:
+  lints: ^6.0.0

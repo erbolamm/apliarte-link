@@ -51,17 +51,42 @@ Preguntas pendientes:
 # Actualización — 2026-03-27 (Estado + Estudio)
 
 ## Avance en UI (Flutter)
-- Implementada una vista de **“Buscar conexiones cercanas”** en `ui/` accesible desde el botón de **Settings**.
+- Implementada una vista de **“Buscar conexiones cercanas”** en `apps/apliarte_link/` accesible desde el botón de **Settings**.
 - La vista realiza **escaneo BLE** con `flutter_blue_plus` y muestra resultados filtrados por **RSSI** como aproximación de “radio corto”.
-- Se añadieron textos de uso en `ui/macos/Runner/Info.plist` para que macOS entienda el motivo del acceso Bluetooth.
+- Se añadieron textos de uso en `apps/apliarte_link/macos/Runner/Info.plist` para que macOS entienda el motivo del acceso Bluetooth.
 
 ## Estudio / Observaciones (macOS)
 - En algunos casos, el sistema **no solicita el prompt de permisos** si faltan *entitlements* de Bluetooth.
 - Para corregirlo, se añadieron entitlements de Bluetooth en:
-  - `ui/macos/Runner/DebugProfile.entitlements`
-  - `ui/macos/Runner/Release.entitlements`
+  - `apps/apliarte_link/macos/Runner/DebugProfile.entitlements`
+  - `apps/apliarte_link/macos/Runner/Release.entitlements`
 
 ## Estado funcional actual
 - El core Rust actual sigue enfocado en comunicación **por red local (LAN/UDP)** e inyección de input.
 - La parte de “switch” basada en dispositivos Bluetooth (pairing/autenticación + enrutado del input) **todavía no está implementada** extremo a extremo.
+
+# Actualización — 2026-05-06 (Roadmap MVP macOS + Windows)
+
+## Decisión de foco
+- El foco inmediato deja de ser Bluetooth, cuentas o extras.
+- El objetivo pasa a ser una **app usable en macOS y Windows** lo antes posible.
+- La definición mínima del MVP es: **dos equipos conectados por red local, con teclado y ratón funcionando juntos entre ambos mediante un cambio explícito de equipo**.
+
+## Qué entra en este MVP
+- App Flutter + daemon Rust arrancando en macOS.
+- App Flutter + daemon Rust arrancando en Windows.
+- Conexión local simple entre ambos equipos.
+- Movimiento, clics, scroll y teclado esencial.
+- Cambio de equipo por comando explícito configurable por el usuario.
+- Teclado y ratón asignados siempre juntos en la primera versión.
+- Confirmación visual clara en origen y destino cuando el control cambie de equipo.
+- Permisos, estabilidad básica y empaquetado descargable.
+
+## Qué no entra todavía
+- Linux.
+- Portapapeles compartido.
+- Audio, archivos y extras de periféricos.
+- Sistema de cuentas o pairing sofisticado.
+- Bluetooth como eje principal del producto.
+- Cambio automático por acercar el ratón al borde como flujo principal del MVP.
 

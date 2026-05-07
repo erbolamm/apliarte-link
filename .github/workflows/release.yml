@@ -7,7 +7,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  BIN_NAME: apliarte-switch
+  BIN_NAME: apliarte-link
 
 jobs:
   build:
@@ -20,22 +20,22 @@ jobs:
           # macOS Intel
           - target: x86_64-apple-darwin
             os: macos-latest
-            asset_name: apliarte-switch-x86_64-apple-darwin
+            asset_name: apliarte-link-x86_64-apple-darwin
 
           # macOS Apple Silicon
           - target: aarch64-apple-darwin
             os: macos-latest
-            asset_name: apliarte-switch-aarch64-apple-darwin
+            asset_name: apliarte-link-aarch64-apple-darwin
 
           # Linux x64
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
-            asset_name: apliarte-switch-x86_64-unknown-linux-gnu
+            asset_name: apliarte-link-x86_64-unknown-linux-gnu
 
           # Windows x64
           - target: x86_64-pc-windows-msvc
             os: windows-latest
-            asset_name: apliarte-switch-x86_64-pc-windows-msvc.exe
+            asset_name: apliarte-link-x86_64-pc-windows-msvc.exe
 
     steps:
       - name: Checkout código
@@ -114,15 +114,15 @@ jobs:
 
       - name: Flutter pub get
         run: flutter pub get
-        working-directory: ui
+        working-directory: apps/apliarte_link
 
       - name: Compilar app Flutter macOS
         run: flutter build macos --release
-        working-directory: ui
+        working-directory: apps/apliarte_link
 
       - name: Embeber daemon en el .app
         run: |
-          APP_PATH="ui/build/macos/Build/Products/Release/apliarte_switch_ui.app"
+          APP_PATH="apps/apliarte_link/build/macos/Build/Products/Release/apliarte_link.app"
           MACOS_DIR="$APP_PATH/Contents/MacOS"
           # Copiar el binario universal al mismo directorio que el ejecutable Flutter
           cp ${{ env.BIN_NAME }}-universal "$MACOS_DIR/${{ env.BIN_NAME }}"
@@ -132,21 +132,21 @@ jobs:
 
       - name: Firmar ad-hoc (permite ejecutar sin notarización)
         run: |
-          APP_PATH="ui/build/macos/Build/Products/Release/apliarte_switch_ui.app"
+          APP_PATH="apps/apliarte_link/build/macos/Build/Products/Release/apliarte_link.app"
           codesign --deep --force --sign "-" "$APP_PATH"
           echo "✅ App firmada ad-hoc"
 
       - name: Empaquetar .app en ZIP
         run: |
-          cd "ui/build/macos/Build/Products/Release"
-          zip -r "$GITHUB_WORKSPACE/apliarte-switch-macos-app.zip" "apliarte_switch_ui.app"
+          cd "apps/apliarte_link/build/macos/Build/Products/Release"
+          zip -r "$GITHUB_WORKSPACE/apliarte-link-macos-app.zip" "apliarte_link.app"
           echo "✅ ZIP generado"
 
       - name: Subir app como artefacto
         uses: actions/upload-artifact@v4
         with:
-          name: apliarte-switch-macos-app
-          path: apliarte-switch-macos-app.zip
+          name: apliarte-link-macos-app
+          path: apliarte-link-macos-app.zip
 
   # ─────────────────────────────────────────────────────────────────────────────
   # App Windows completa: Flutter UI + daemon Rust embebido
@@ -177,16 +177,16 @@ jobs:
 
       - name: Flutter pub get
         run: flutter pub get
-        working-directory: ui
+        working-directory: apps/apliarte_link
 
       - name: Compilar app Flutter Windows
         run: flutter build windows --release
-        working-directory: ui
+        working-directory: apps/apliarte_link
 
       - name: Embeber daemon en la carpeta de la app
         shell: bash
         run: |
-          RELEASE_DIR="ui/build/windows/x64/runner/Release"
+          RELEASE_DIR="apps/apliarte_link/build/windows/x64/runner/Release"
           cp "target/x86_64-pc-windows-msvc/release/${{ env.BIN_NAME }}.exe" "$RELEASE_DIR/${{ env.BIN_NAME }}.exe"
           echo "✅ Daemon embebido en $RELEASE_DIR"
           ls -lh "$RELEASE_DIR/"
@@ -194,14 +194,14 @@ jobs:
       - name: Empaquetar en ZIP
         shell: pwsh
         run: |
-          Compress-Archive -Path "ui/build/windows/x64/runner/Release/*" -DestinationPath "apliarte-switch-windows-app.zip"
+          Compress-Archive -Path "apps/apliarte_link/build/windows/x64/runner/Release/*" -DestinationPath "apliarte-link-windows-app.zip"
           Write-Host "✅ ZIP generado"
 
       - name: Subir app Windows como artefacto
         uses: actions/upload-artifact@v4
         with:
-          name: apliarte-switch-windows-app
-          path: apliarte-switch-windows-app.zip
+          name: apliarte-link-windows-app
+          path: apliarte-link-windows-app.zip
 
   release:
     name: Crear Release en GitHub
@@ -217,21 +217,21 @@ jobs:
 
       - name: Renombrar binarios con nombres limpios
         run: |
-          mv apliarte-switch-aarch64-apple-darwin/apliarte-switch-aarch64-apple-darwin       apliarte-switch-macos-arm64
-          mv apliarte-switch-x86_64-apple-darwin/apliarte-switch-x86_64-apple-darwin         apliarte-switch-macos-x64
-          mv apliarte-switch-x86_64-unknown-linux-gnu/apliarte-switch-x86_64-unknown-linux-gnu apliarte-switch-linux-x64
-          mv "apliarte-switch-x86_64-pc-windows-msvc.exe/apliarte-switch-x86_64-pc-windows-msvc.exe" apliarte-switch-windows-x64.exe
+          mv apliarte-link-aarch64-apple-darwin/apliarte-link-aarch64-apple-darwin       apliarte-link-macos-arm64
+          mv apliarte-link-x86_64-apple-darwin/apliarte-link-x86_64-apple-darwin         apliarte-link-macos-x64
+          mv apliarte-link-x86_64-unknown-linux-gnu/apliarte-link-x86_64-unknown-linux-gnu apliarte-link-linux-x64
+          mv "apliarte-link-x86_64-pc-windows-msvc.exe/apliarte-link-x86_64-pc-windows-msvc.exe" apliarte-link-windows-x64.exe
           # Apps completas — opcionales, solo si sus jobs terminaron bien
-          if [ -f "apliarte-switch-macos-app/apliarte-switch-macos-app.zip" ]; then
-            mv apliarte-switch-macos-app/apliarte-switch-macos-app.zip apliarte-switch-macos-app.zip
-            echo "MACOS_APP=apliarte-switch-macos-app.zip" >> $GITHUB_ENV
+          if [ -f "apliarte-link-macos-app/apliarte-link-macos-app.zip" ]; then
+            mv apliarte-link-macos-app/apliarte-link-macos-app.zip apliarte-link-macos-app.zip
+            echo "MACOS_APP=apliarte-link-macos-app.zip" >> $GITHUB_ENV
           else
             echo "MACOS_APP=" >> $GITHUB_ENV
             echo "⚠️ App macOS no disponible en este release"
           fi
-          if [ -f "apliarte-switch-windows-app/apliarte-switch-windows-app.zip" ]; then
-            mv apliarte-switch-windows-app/apliarte-switch-windows-app.zip apliarte-switch-windows-app.zip
-            echo "WINDOWS_APP=apliarte-switch-windows-app.zip" >> $GITHUB_ENV
+          if [ -f "apliarte-link-windows-app/apliarte-link-windows-app.zip" ]; then
+            mv apliarte-link-windows-app/apliarte-link-windows-app.zip apliarte-link-windows-app.zip
+            echo "WINDOWS_APP=apliarte-link-windows-app.zip" >> $GITHUB_ENV
           else
             echo "WINDOWS_APP=" >> $GITHUB_ENV
             echo "⚠️ App Windows no disponible en este release"
@@ -247,7 +247,7 @@ jobs:
             PRERELEASE="--prerelease"
           fi
           # Binarios crudos siempre presentes
-          FILES="apliarte-switch-macos-arm64 apliarte-switch-macos-x64 apliarte-switch-linux-x64 apliarte-switch-windows-x64.exe"
+          FILES="apliarte-link-macos-arm64 apliarte-link-macos-x64 apliarte-link-linux-x64 apliarte-link-windows-x64.exe"
           # Apps completas si están disponibles
           if [ -n "$MACOS_APP" ]; then FILES="$MACOS_APP $FILES"; fi
           if [ -n "$WINDOWS_APP" ]; then FILES="$WINDOWS_APP $FILES"; fi

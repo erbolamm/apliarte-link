@@ -1,15 +1,26 @@
 # Rust
 /target/
-core/target/
+native/daemon/target/
 Cargo.lock
 
 # Flutter
-ui/.dart_tool/
-ui/.flutter-plugins
-ui/.flutter-plugins-dependencies
-ui/.packages
-ui/build/
-ui/*.iml
+apps/apliarte_link/.dart_tool/
+apps/apliarte_link/.flutter-plugins
+apps/apliarte_link/.flutter-plugins-dependencies
+apps/apliarte_link/.packages
+apps/apliarte_link/build/
+apps/apliarte_link/*.iml
+apps/apliarte_link/devtools_options.yaml
+packages/**/.dart_tool/
+packages/**/.packages
+packages/**/build/
+packages/**/pubspec.lock
+
+# Firebase
+web/.firebase/
+
+# Release artifacts
+*.zip
 
 # Configuración de usuario (no compartir)
 *.config.local.json
@@ -20,6 +31,7 @@ ui/*.iml
 __MACOSX/
 
 # Editor
+.atl/
 .vscode/settings.json
 .idea/
 

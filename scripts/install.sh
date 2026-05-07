@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# install.sh — Script de instalación de ApliArteSwitch para macOS y Linux
-# Uso: curl -fsSL https://raw.githubusercontent.com/erbolamm/apliarte-switch/main/scripts/install.sh | bash
+# install.sh — Script de instalación de ApliArte Link para macOS y Linux
+# Uso: curl -fsSL https://raw.githubusercontent.com/erbolamm/apliarte-link/main/scripts/install.sh | bash
 
 set -e
 
-REPO="erbolamm/apliarte-switch"
-BIN_NAME="apliarte-switch"
+REPO="erbolamm/apliarte-link"
+BIN_NAME="apliarte-link"
 INSTALL_DIR="/usr/local/bin"
 
 # Detectar SO y arquitectura
@@ -43,7 +43,10 @@ VERSION=$(curl -s "https://api.github.com/repos/$REPO/releases/latest" | grep '"
 if [ -z "$VERSION" ]; then
   echo "⚠️  No se encontró ninguna release publicada."
   echo "   El proyecto está en desarrollo activo."
-  echo "   Compila desde código fuente con: cargo install apliarte-switch"
+  echo "   Clona el repo y compila desde código fuente:"
+  echo "   git clone https://github.com/$REPO.git apliarte-link"
+  echo "   cd apliarte-link"
+  echo "   cargo build --release"
   exit 1
 fi
 
@@ -70,11 +73,11 @@ fi
 rm -rf "$TMP"
 
 echo ""
-echo "✅ ¡ApliArteSwitch instalado correctamente!"
+echo "✅ ¡ApliArte Link instalado correctamente!"
 echo ""
 echo "🚀 Para empezar:"
-echo "   apliarte-switch          → arranca el servicio"
-echo "   apliarte-switch --help   → ver todas las opciones"
+echo "   apliarte-link          → arranca el servicio"
+echo "   apliarte-link --help   → ver todas las opciones"
 echo ""
 
 # Aviso especial para Linux (uinput)

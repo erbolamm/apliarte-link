@@ -3,24 +3,24 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ApliArteSwitch — KVM virtual por red local</title>
+    <title>ApliArte Link — KVM virtual por red local</title>
     <meta
       name="description"
-      content="ApliArteSwitch: KVM virtual por red local. Comparte un teclado y ratón entre Mac, Windows y Linux sin cables. Proyecto open source en estado WIP."
+      content="ApliArte Link: KVM virtual por red local. Comparte un teclado y ratón entre Mac, Windows y Linux sin cables. Proyecto open source en estado WIP."
     />
 
     <!-- Open Graph / redes -->
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="ApliArteSwitch — KVM virtual por red local" />
+    <meta property="og:title" content="ApliArte Link — KVM virtual por red local" />
     <meta
       property="og:description"
       content="Comparte teclado y ratón entre Mac, Windows y Linux sin cables. Open source (WIP)."
     />
-    <meta property="og:url" content="https://erbolamm.github.io/apliarte-switch/" />
+    <meta property="og:url" content="https://erbolamm.github.io/apliarte-link/" />
 
     <!-- Twitter/X -->
     <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="ApliArteSwitch — KVM virtual por red local" />
+    <meta name="twitter:title" content="ApliArte Link — KVM virtual por red local" />
     <meta
       name="twitter:description"
       content="Comparte teclado y ratón entre Mac, Windows y Linux sin cables. Open source (WIP)."
@@ -38,12 +38,12 @@
       <header class="hero">
         <div class="badge-row">
           <span class="badge badge-wip">WIP</span>
-          <span class="badge">Fase 1: macOS</span>
+          <span class="badge">Foco actual: macOS + Windows</span>
           <span class="badge">Open Source</span>
           <span class="badge">MIT</span>
         </div>
 
-        <h1>ApliArteSwitch</h1>
+        <h1>ApliArte Link</h1>
         <p class="lead">
           <strong>KVM virtual por red local</strong>. Comparte un teclado y ratón entre <strong>Mac</strong>,
           <strong>Windows</strong> y <strong>Linux</strong> sin cables.
@@ -52,7 +52,7 @@
         <div class="cta-row">
           <a class="btn btn-primary" href="#instalacion">Instalar</a>
           <a class="btn" href="#estado">Ver estado</a>
-          <a class="btn" href="https://github.com/erbolamm/apliarte-switch" target="_blank" rel="noreferrer"
+          <a class="btn" href="https://github.com/erbolamm/apliarte-link" target="_blank" rel="noreferrer"
             >Ver GitHub ↗</a
           >
         </div>
@@ -71,7 +71,7 @@
         <h2>¿Qué es?</h2>
         <div class="card">
           <p>
-            ApliArteSwitch es un servicio que corre en segundo plano y te permite <strong>mover el ratón al borde</strong>
+            ApliArte Link es un servicio que corre en segundo plano y te permite <strong>mover el ratón al borde</strong>
             de la pantalla para “saltar” al siguiente ordenador de tu red local.
           </p>
           <ul class="list">
@@ -86,24 +86,26 @@
         <h2>Estado (importante)</h2>
         <div class="card card-warn">
           <p>
-            Este proyecto está en <strong>desarrollo (WIP)</strong>. La fase actual se centra en
-            <strong>macOS</strong>. Windows y Linux están planificados.
+            Este proyecto está en <strong>desarrollo (WIP)</strong>. El foco actual es sacar una primera app
+            usable en <strong>macOS</strong> y <strong>Windows</strong>, con conexión básica de ratón y teclado
+            entre ambos equipos. <strong>Linux</strong> queda para después del MVP.
           </p>
           <div class="grid-2">
             <div>
-              <h3>Ya planteado</h3>
+              <h3>Objetivo inmediato</h3>
               <ul class="list">
+                <li><strong>App nativa</strong> en macOS y Windows.</li>
                 <li><strong>Switch automático</strong> por borde.</li>
                 <li><strong>Hotkey manual</strong> (Ctrl+Alt+Tab por defecto).</li>
-                <li><strong>Descubrimiento</strong> en LAN (mDNS).</li>
+                <li><strong>Conexión local</strong> entre dos equipos por LAN.</li>
               </ul>
             </div>
             <div>
-              <h3>Pendiente</h3>
+              <h3>Después del MVP</h3>
               <ul class="list">
                 <li><strong>Portapapeles compartido</strong>.</li>
-                <li><strong>Cifrado DTLS</strong> (en progreso / por cerrar).</li>
-                <li><strong>Empaquetado</strong> fácil por plataforma.</li>
+                <li><strong>Cifrado DTLS</strong> y hardening.</li>
+                <li><strong>Linux</strong> y extras de periféricos.</li>
               </ul>
             </div>
           </div>
@@ -116,13 +118,13 @@
           <p class="muted">Atajo: instala el binario o compila desde código.</p>
 
           <h3>macOS / Linux</h3>
-          <pre><code>curl -fsSL https://raw.githubusercontent.com/erbolamm/apliarte-switch/main/scripts/install.sh | bash</code></pre>
+          <pre><code>curl -fsSL https://raw.githubusercontent.com/erbolamm/apliarte-link/main/scripts/install.sh | bash</code></pre>
 
           <h3>Windows (PowerShell)</h3>
-          <pre><code>irm https://raw.githubusercontent.com/erbolamm/apliarte-switch/main/scripts/install.ps1 | iex</code></pre>
+          <pre><code>irm https://raw.githubusercontent.com/erbolamm/apliarte-link/main/scripts/install.ps1 | iex</code></pre>
 
           <h3>Con Cargo (todas)</h3>
-          <pre><code>cargo install apliarte-switch</code></pre>
+          <pre><code>cargo install apliarte-link</code></pre>
         </div>
       </section>
 
@@ -163,7 +165,7 @@
             <div>Javier Mateo (ApliArte) — <a href="https://github.com/erbolamm" target="_blank" rel="noreferrer">github.com/erbolamm</a></div>
           </div>
           <div class="footer-links">
-            <a href="https://github.com/erbolamm/apliarte-switch" target="_blank" rel="noreferrer">GitHub</a>
+            <a href="https://github.com/erbolamm/apliarte-link" target="_blank" rel="noreferrer">GitHub</a>
             <a href="https://apliarte.com" target="_blank" rel="noreferrer">apliarte.com</a>
             <a href="#instalacion">Instalar</a>
           </div>
@@ -174,8 +176,8 @@
 
     <script>
       (function () {
-        const shareUrl = 'https://erbolamm.github.io/apliarte-switch/';
-        const shareText = 'ApliArteSwitch — KVM virtual por red local (comparte teclado y ratón entre Mac, Windows y Linux).';
+        const shareUrl = 'https://erbolamm.github.io/apliarte-link/';
+        const shareText = 'ApliArte Link — KVM virtual por red local (comparte teclado y ratón entre Mac, Windows y Linux).';
 
         const links = {
           x: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`,
@@ -185,7 +187,7 @@
           reddit: `https://www.reddit.com/submit?url=${encodeURIComponent(shareUrl)}&title=${encodeURIComponent(shareText)}`,
           facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`,
           threads: `https://www.threads.net/intent/post?text=${encodeURIComponent(shareText + ' ' + shareUrl)}`,
-          email: `mailto:?subject=${encodeURIComponent('ApliArteSwitch — KVM virtual por red local')}&body=${encodeURIComponent(shareText + '\\n\\n' + shareUrl)}`
+          email: `mailto:?subject=${encodeURIComponent('ApliArte Link — KVM virtual por red local')}&body=${encodeURIComponent(shareText + '\\n\\n' + shareUrl)}`
         };
 
         document.querySelectorAll('[data-share]').forEach((a) => {
