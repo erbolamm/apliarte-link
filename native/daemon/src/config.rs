@@ -13,7 +13,7 @@ use std::path::PathBuf;
 
 /// Configuración completa de la app.
 /// Javier: Piensa en esto como el "modelo" de un Form en Flutter.
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct AppConfig {
     pub network: NetworkConfig,

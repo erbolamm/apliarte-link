@@ -137,9 +137,8 @@ pub fn start_switch_listener(
         .spawn(move || unsafe {
             use windows::Win32::Foundation::{HINSTANCE, LPARAM, LRESULT, WPARAM};
             use windows::Win32::System::LibraryLoader::GetModuleHandleW;
-            use windows::Win32::UI::Input::KeyboardAndMouse::{
-                KBDLLHOOKSTRUCT, MSLLHOOKSTRUCT, VK_ESCAPE, VK_RSHIFT,
-            };
+            use windows::Win32::UI::Input::KeyboardAndMouse::{VK_ESCAPE, VK_RSHIFT};
+            use windows::Win32::UI::WindowsAndMessaging::{KBDLLHOOKSTRUCT, MSLLHOOKSTRUCT};
             use windows::Win32::UI::WindowsAndMessaging::{
                 CallNextHookEx, DispatchMessageW, GetMessageW, SetWindowsHookExW,
                 TranslateMessage, UnhookWindowsHookEx, HC_ACTION, HHOOK, MSG,
@@ -155,8 +154,8 @@ pub fn start_switch_listener(
                 lparam: LPARAM,
             ) -> LRESULT {
                 use windows::Win32::Foundation::LRESULT;
-                use windows::Win32::UI::Input::KeyboardAndMouse::{KBDLLHOOKSTRUCT, VK_ESCAPE, VK_RSHIFT};
-                use windows::Win32::UI::WindowsAndMessaging::{CallNextHookEx, HC_ACTION, HHOOK, WM_KEYDOWN, WM_KEYUP, WM_SYSKEYDOWN, WM_SYSKEYUP};
+                use windows::Win32::UI::Input::KeyboardAndMouse::{VK_ESCAPE, VK_RSHIFT};
+                use windows::Win32::UI::WindowsAndMessaging::{CallNextHookEx, HC_ACTION, HHOOK, KBDLLHOOKSTRUCT, WM_KEYDOWN, WM_KEYUP, WM_SYSKEYDOWN, WM_SYSKEYUP};
 
                 if code == HC_ACTION as i32 {
                     if let Some(context) = WINDOWS_SWITCH_CONTEXT.get() {
@@ -286,13 +285,13 @@ pub fn start_switch_listener(
                 Some(mouse_hook),
                 HINSTANCE(module.0),
                 0,
-            );
+            ).unwrap_or_default();
             let keyboard_hook_handle = SetWindowsHookExW(
                 WH_KEYBOARD_LL,
                 Some(keyboard_hook),
                 HINSTANCE(module.0),
                 0,
-            );
+            ).unwrap_or_default();
 
             if mouse_hook_handle.is_invalid() || keyboard_hook_handle.is_invalid() {
                 tracing::error!("No se pudieron instalar los hooks globales de Windows");
@@ -314,20 +313,18 @@ pub fn start_switch_listener(
 }
 
 fn is_reserved_mouse_command(command: &str, message: u32) -> bool {
-    matches!(
-        (command, message),
-        ("triple_right_click", value)
-            if value == windows::Win32::UI::WindowsAndMessaging::WM_RBUTTONDOWN
-                || value == windows::Win32::UI::WindowsAndMessaging::WM_RBUTTONUP
-            | ("triple_middle_click", value)
-                if value == windows::Win32::UI::WindowsAndMessaging::WM_MBUTTONDOWN
-                    || value == windows::Win32::UI::WindowsAndMessaging::WM_MBUTTONUP
-    )
+    use windows::Win32::UI::WindowsAndMessaging::{
+        WM_MBUTTONDOWN, WM_MBUTTONUP, WM_RBUTTONDOWN, WM_RBUTTONUP,
+    };
+    (command == "triple_right_click"
+        && (message == WM_RBUTTONDOWN || message == WM_RBUTTONUP))
+        || (command == "triple_middle_click"
+            && (message == WM_MBUTTONDOWN || message == WM_MBUTTONUP))
 }
 
 fn mouse_input_event(
     message: u32,
-    info: &windows::Win32::UI::Input::KeyboardAndMouse::MSLLHOOKSTRUCT,
+    info: &windows::Win32::UI::WindowsAndMessaging::MSLLHOOKSTRUCT,
     last_mouse_pos: &Mutex<Option<(i32, i32)>>,
 ) -> Option<InputEvent> {
     use windows::Win32::UI::WindowsAndMessaging::{
