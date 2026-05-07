@@ -115,117 +115,132 @@ class HomeScreen extends StatelessWidget {
   Widget _buildMainContent(BuildContext context, AppState appState) {
     return Padding(
       padding: const EdgeInsets.all(40.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header: Título + Estado del Motor
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final compactHeader = constraints.maxWidth < 900;
-
-              final actions = Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                crossAxisAlignment: WrapCrossAlignment.center,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  BuildQuickActionButton(
-                    context: context,
-                    icon: appState.inputConfig.armed
-                        ? Icons.shield
-                        : Icons.shield_outlined,
-                    label: appState.inputConfig.armed
-                        ? 'Desactivar control'
-                        : 'Activar control',
-                    onPressed: () {
-                      appState.updateInputConfig(
-                        appState.inputConfig.copyWith(
-                          armed: !appState.inputConfig.armed,
-                        ),
+                  // Header: Título + Estado del Motor
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final compactHeader = constraints.maxWidth < 900;
+
+                      final actions = Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          BuildQuickActionButton(
+                            context: context,
+                            icon: appState.inputConfig.armed
+                                ? Icons.shield
+                                : Icons.shield_outlined,
+                            label: appState.inputConfig.armed
+                                ? 'Desactivar control'
+                                : 'Activar control',
+                            onPressed: () {
+                              appState.updateInputConfig(
+                                appState.inputConfig.copyWith(
+                                  armed: !appState.inputConfig.armed,
+                                ),
+                              );
+                            },
+                          ),
+                          BuildQuickActionButton(
+                            context: context,
+                            icon: Icons.swap_horiz,
+                            label: 'Cambiar equipo',
+                            onPressed:
+                                appState.inputConfig.armed &&
+                                    appState.peers.any((peer) => peer.connected)
+                                ? appState.cycleActivePeer
+                                : null,
+                          ),
+                          BuildQuickActionButton(
+                            context: context,
+                            icon: Icons.keyboard_return,
+                            label: 'Volver aquí',
+                            onPressed:
+                                appState.inputConfig.armed &&
+                                    appState.activePeer != null
+                                ? appState.releaseControl
+                                : null,
+                          ),
+                          BuildEngineStatusBadge(
+                            context: context,
+                            appState: appState,
+                          ),
+                        ],
+                      );
+
+                      if (compactHeader) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Tus Dispositivos',
+                              style: Theme.of(context).textTheme.headlineMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                            ),
+                            const SizedBox(height: 16),
+                            actions,
+                          ],
+                        );
+                      }
+
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Tus Dispositivos',
+                              style: Theme.of(context).textTheme.headlineMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                            ),
+                          ),
+                          const SizedBox(width: 24),
+                          Flexible(
+                            child: Align(
+                              alignment: Alignment.topRight,
+                              child: actions,
+                            ),
+                          ),
+                        ],
                       );
                     },
                   ),
-                  BuildQuickActionButton(
-                    context: context,
-                    icon: Icons.swap_horiz,
-                    label: 'Cambiar equipo',
-                    onPressed:
-                        appState.inputConfig.armed &&
-                            appState.peers.any((peer) => peer.connected)
-                        ? appState.cycleActivePeer
-                        : null,
-                  ),
-                  BuildQuickActionButton(
-                    context: context,
-                    icon: Icons.keyboard_return,
-                    label: 'Volver aquí',
-                    onPressed:
-                        appState.inputConfig.armed &&
-                            appState.activePeer != null
-                        ? appState.releaseControl
-                        : null,
-                  ),
-                  BuildEngineStatusBadge(context: context, appState: appState),
-                ],
-              );
+                  const SizedBox(height: 16),
+                  _buildCommandSummary(context, appState),
+                  const SizedBox(height: 24),
+                  _buildPeripheralSection(context, appState),
+                  const SizedBox(height: 48),
 
-              if (compactHeader) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Tus Dispositivos',
-                      style: Theme.of(context).textTheme.headlineMedium
-                          ?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                    ),
-                    const SizedBox(height: 16),
-                    actions,
-                  ],
-                );
-              }
-
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Tus Dispositivos',
-                      style: Theme.of(context).textTheme.headlineMedium
-                          ?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                    ),
-                  ),
-                  const SizedBox(width: 24),
-                  Flexible(
-                    child: Align(alignment: Alignment.topRight, child: actions),
+                  // Lista de PCs en red
+                  Wrap(
+                    spacing: 24,
+                    runSpacing: 24,
+                    children: [
+                      _buildMyPcCard(context, appState),
+                      ...appState.peers.map(
+                        (peer) => _buildPeerCard(context, peer),
+                      ),
+                      _buildAddPeerCard(context),
+                    ],
                   ),
                 ],
-              );
-            },
-          ),
-          const SizedBox(height: 16),
-          _buildCommandSummary(context, appState),
-          const SizedBox(height: 24),
-          _buildPeripheralSection(context, appState),
-          const SizedBox(height: 48),
-
-          // Lista de PCs en red
-          Expanded(
-            child: Wrap(
-              spacing: 24,
-              runSpacing: 24,
-              children: [
-                _buildMyPcCard(context, appState),
-                ...appState.peers.map((peer) => _buildPeerCard(context, peer)),
-                _buildAddPeerCard(context),
-              ],
+              ),
             ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
@@ -277,10 +292,11 @@ class HomeScreen extends StatelessWidget {
   Widget _buildPeripheralSection(BuildContext context, AppState appState) {
     final peripherals = appState.peripherals;
 
-    return Wrap(
-      crossAxisAlignment: WrapCrossAlignment.start,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Wrap(
+        Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             const Icon(Icons.usb, color: Colors.white70, size: 18),
             const SizedBox(width: 10),
