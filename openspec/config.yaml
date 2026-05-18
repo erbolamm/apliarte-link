@@ -1,0 +1,13 @@
+# ApliArte Link — SDD Configuration
+# Generated: 2026-05-18
+# Session: Fase 1 — Protocolo confiable (UDP→TCP+TLS+MessagePack)
+
+project: apliarte-link
+execution_mode: auto
+artifact_store:
+  - engram
+  - openspec
+chained_pr: single-pr-default
+review_budget_lines: 400
+strict_tdd: false
+test_command: cargo test --manifest-path native/daemon/Cargo.toml
