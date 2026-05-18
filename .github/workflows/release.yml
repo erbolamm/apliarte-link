@@ -269,7 +269,7 @@ jobs:
 
   deploy-firebase:
     name: Deploy web a Firebase Hosting
-    needs: build
+    needs: release
     runs-on: ubuntu-latest
 
     steps:
