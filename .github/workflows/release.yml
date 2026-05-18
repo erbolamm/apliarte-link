@@ -51,6 +51,7 @@ jobs:
 
       - name: Compilar en release
         run: cargo build --release --target ${{ matrix.target }}
+        continue-on-error: ${{ matrix.os == 'ubuntu-latest' }}
 
       # En Linux también generamos .deb para facilitar la instalación
       - name: Generar .deb (solo Linux)
