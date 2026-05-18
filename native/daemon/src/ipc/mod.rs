@@ -23,15 +23,13 @@
 use crate::config::AppConfig;
 use crate::control::{self, ControlState, TransferNotice};
 use crate::devices::{self, PeripheralInfo};
-use crate::input::protocol::InputEvent;
-use crate::input::protocol::{ControlMessage, NetworkPacket};
+use crate::network::ConnectionManager;
 use crate::network::{PeerEntry, PeerList};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::net::{IpAddr, SocketAddr};
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
-use tokio::sync::mpsc::Sender;
 
 // Javier: Mensajes que Flutter puede enviar al servicio (Fase 2)
 #[allow(dead_code)]
@@ -108,11 +106,11 @@ use tokio::net::TcpListener;
 /// Arranca el servidor IPC por TCP local (Loopback).
 /// Javier: Es el backend de nuestra UI. Se levanta en el puerto cerrado 4243 (solo accesible desde este Mac).
 pub async fn serve(
-    _event_tx: Sender<InputEvent>,
     cfg: Arc<Mutex<AppConfig>>,
     peers: PeerList,
     active_peer: Arc<Mutex<Option<SocketAddr>>>,
     control_state: ControlState,
+    conn_mgr: ConnectionManager,
 ) -> Result<()> {
     let listener = TcpListener::bind("127.0.0.1:4243").await?;
     tracing::info!("🔌 Servidor IPC escuchando en 127.0.0.1:4243");
@@ -128,6 +126,7 @@ pub async fn serve(
         let active_peer = active_peer.clone();
         let cfg = cfg.clone();
         let control_state = control_state.clone();
+        let conn_mgr = conn_mgr.clone();
         tokio::spawn(async move {
             let (reader, mut writer) = socket.split();
             let mut buf_reader = BufReader::new(reader);
@@ -153,7 +152,14 @@ pub async fn serve(
                         let response = match serde_json::from_str::<UiCommand>(&line) {
                             Ok(cmd) => {
                                 tracing::info!("⚡ Comando recibido de la UI: {:?}", cmd);
-                                handle_command(cmd, &peers, &active_peer, &cfg, &control_state)
+                                handle_command(
+                                    cmd,
+                                    &peers,
+                                    &active_peer,
+                                    &cfg,
+                                    &control_state,
+                                    &conn_mgr,
+                                )
                             }
                             Err(e) => UiResponse::Error {
                                 message: format!("Comando IPC inválido: {}", e),
@@ -181,6 +187,7 @@ fn handle_command(
     active_peer: &Arc<Mutex<Option<SocketAddr>>>,
     cfg: &Arc<Mutex<AppConfig>>,
     control_state: &ControlState,
+    conn_mgr: &ConnectionManager,
 ) -> UiResponse {
     let data_port = cfg.lock().unwrap().network.port;
     match cmd {
@@ -205,17 +212,17 @@ fn handle_command(
         UiCommand::SetActivePeer { ip } => match resolve_peer_addr(&ip, data_port, peers) {
             Ok(addr) => {
                 add_peer(peers, addr, None);
-                control::set_active_peer(addr, peers, active_peer, control_state, data_port);
+                control::set_active_peer(addr, peers, active_peer, control_state, conn_mgr);
                 build_status(peers, active_peer, cfg, control_state)
             }
             Err(message) => UiResponse::Error { message },
         },
         UiCommand::ReleaseControl => {
-            control::release_control(peers, active_peer, control_state, data_port);
+            control::release_control(peers, active_peer, control_state, conn_mgr);
             build_status(peers, active_peer, cfg, control_state)
         }
         UiCommand::CycleActivePeer => {
-            control::cycle_active_peer(peers, active_peer, control_state, data_port);
+            control::cycle_active_peer(peers, active_peer, control_state, conn_mgr);
             build_status(peers, active_peer, cfg, control_state)
         }
         UiCommand::UpdateInputConfig { input } => {
@@ -231,7 +238,7 @@ fn handle_command(
             };
 
             if !updated_cfg.input.armed {
-                control::release_control(peers, active_peer, control_state, data_port);
+                control::release_control(peers, active_peer, control_state, conn_mgr);
             }
 
             match crate::config::save(&updated_cfg) {
@@ -353,8 +360,14 @@ mod tests {
 
         let infos = build_peer_infos(&peers);
 
-        assert!(infos.iter().any(|peer| peer.ip == recent.ip().to_string() && peer.connected));
-        assert!(infos.iter().any(|peer| peer.ip == stale.ip().to_string() && !peer.connected));
-        assert!(infos.iter().any(|peer| peer.ip == manual.ip().to_string() && !peer.connected));
+        assert!(infos
+            .iter()
+            .any(|peer| peer.ip == recent.ip().to_string() && peer.connected));
+        assert!(infos
+            .iter()
+            .any(|peer| peer.ip == stale.ip().to_string() && !peer.connected));
+        assert!(infos
+            .iter()
+            .any(|peer| peer.ip == manual.ip().to_string() && !peer.connected));
     }
 }

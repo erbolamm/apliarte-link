@@ -25,25 +25,24 @@ mod windows;
 
 use crate::config::AppConfig;
 use crate::control::ControlState;
+use crate::network::ConnectionManager;
 use crate::network::PeerList;
 use anyhow::Result;
-use protocol::InputEvent;
+use protocol::Frame;
 use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
 use tokio::sync::mpsc::Receiver;
 
 /// Arranca el motor de input.
-/// Javier: Es como llamar a initState() — arranca todos los listeners de input
-/// y mantiene el bucle activo escuchando al canal de eventos de red.
 pub async fn serve(
-    mut event_rx: Receiver<InputEvent>,
+    mut event_rx: Receiver<(SocketAddr, Frame)>,
     cfg: Arc<Mutex<AppConfig>>,
     peers: PeerList,
     active_peer: Arc<Mutex<Option<SocketAddr>>>,
     control_state: ControlState,
+    conn_mgr: ConnectionManager,
 ) -> Result<()> {
     let input_cfg = cfg.lock().unwrap().input.clone();
-    let data_port = cfg.lock().unwrap().network.port;
     tracing::info!(
         "⌨️  Motor de input arrancado (modo: {})",
         if input_cfg.edge_switch {
@@ -59,7 +58,7 @@ pub async fn serve(
         peers.clone(),
         active_peer.clone(),
         control_state.clone(),
-        data_port,
+        conn_mgr.clone(),
     )?;
 
     #[cfg(target_os = "windows")]
@@ -68,25 +67,34 @@ pub async fn serve(
         peers.clone(),
         active_peer.clone(),
         control_state.clone(),
-        data_port,
+        conn_mgr.clone(),
     )?;
 
-    // Javier: Bucle infinito esperando eventos recibidos por red.
-    // La captura local real vive en los listeners de macOS/Windows y desde allí
-    // se reenvían los InputEvent al peer activo.
+    // Receive frames from the transport layer and inject them locally.
+    while let Some((_peer_addr, frame)) = event_rx.recv().await {
+        match frame {
+            Frame::Input(event) => {
+                tracing::debug!("Input recibido de red: {:?}", event);
 
-    while let Some(event) = event_rx.recv().await {
-        tracing::debug!("Input recibido de red: {:?}", event);
+                #[cfg(target_os = "macos")]
+                macos::inject(event).await?;
 
-        // Javier: Según el SO, se llama a la implementación correcta
-        #[cfg(target_os = "macos")]
-        macos::inject(event).await?;
+                #[cfg(target_os = "windows")]
+                windows::inject(event).await?;
 
-        #[cfg(target_os = "windows")]
-        windows::inject(event).await?;
-
-        #[cfg(target_os = "linux")]
-        linux::inject(event).await?;
+                #[cfg(target_os = "linux")]
+                linux::inject(event).await?;
+            }
+            Frame::Control(msg) => {
+                crate::network::mod_handle_control(&control_state, msg);
+            }
+            Frame::KeepAlive(ping) => {
+                tracing::trace!("Keep-alive: {:?}", ping);
+            }
+            Frame::Handshake(hs) => {
+                tracing::debug!("Handshake: {:?}", hs);
+            }
+        }
     }
 
     Ok(())

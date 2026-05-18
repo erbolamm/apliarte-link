@@ -1,8 +1,9 @@
 use crate::config::InputConfig;
-use crate::input::protocol::{ControlMessage, InputEvent, MouseButton, NetworkPacket};
+use crate::input::protocol::{ControlMessage, Frame, InputEvent, MouseButton};
+use crate::network::ConnectionManager;
 use crate::network::PeerList;
 use serde::{Deserialize, Serialize};
-use std::net::{SocketAddr, UdpSocket as StdUdpSocket};
+use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
@@ -63,7 +64,10 @@ impl ControlStatus {
         self.transfer_notice = Some(self.notice(
             "destination",
             "Ratón y teclado conectados aquí",
-            format!("Este ordenador está recibiendo control desde {}.", source_label),
+            format!(
+                "Este ordenador está recibiendo control desde {}.",
+                source_label
+            ),
         ));
     }
 
@@ -129,7 +133,7 @@ pub fn cycle_active_peer(
     peers: &PeerList,
     active_peer: &Arc<Mutex<Option<SocketAddr>>>,
     control_state: &ControlState,
-    data_port: u16,
+    conn_mgr: &ConnectionManager,
 ) -> bool {
     let previous = current_active_peer(active_peer);
     let next = next_connected_peer(peers, previous);
@@ -139,7 +143,7 @@ pub fn cycle_active_peer(
     }
 
     set_active_peer_value(active_peer, next);
-    apply_transfer(previous, next, peers, control_state, data_port);
+    apply_transfer(previous, next, peers, control_state, conn_mgr);
     true
 }
 
@@ -148,7 +152,7 @@ pub fn set_active_peer(
     peers: &PeerList,
     active_peer: &Arc<Mutex<Option<SocketAddr>>>,
     control_state: &ControlState,
-    data_port: u16,
+    conn_mgr: &ConnectionManager,
 ) -> bool {
     let previous = current_active_peer(active_peer);
     if previous == Some(next) {
@@ -156,7 +160,7 @@ pub fn set_active_peer(
     }
 
     set_active_peer_value(active_peer, Some(next));
-    apply_transfer(previous, Some(next), peers, control_state, data_port);
+    apply_transfer(previous, Some(next), peers, control_state, conn_mgr);
     true
 }
 
@@ -164,7 +168,7 @@ pub fn release_control(
     peers: &PeerList,
     active_peer: &Arc<Mutex<Option<SocketAddr>>>,
     control_state: &ControlState,
-    data_port: u16,
+    conn_mgr: &ConnectionManager,
 ) -> bool {
     let previous = current_active_peer(active_peer);
     if previous.is_none() {
@@ -172,7 +176,7 @@ pub fn release_control(
     }
 
     set_active_peer_value(active_peer, None);
-    apply_transfer(previous, None, peers, control_state, data_port);
+    apply_transfer(previous, None, peers, control_state, conn_mgr);
     true
 }
 
@@ -181,8 +185,8 @@ pub fn current_active_peer(active_peer: &Arc<Mutex<Option<SocketAddr>>>) -> Opti
     *current_active
 }
 
-pub fn send_input_to_active_peer(
-    socket: &StdUdpSocket,
+pub async fn send_input_to_active_peer(
+    conn_mgr: &ConnectionManager,
     active_peer: &Arc<Mutex<Option<SocketAddr>>>,
     event: &InputEvent,
 ) -> bool {
@@ -190,24 +194,8 @@ pub fn send_input_to_active_peer(
         return false;
     };
 
-    let packet = NetworkPacket::Input {
-        event: event.clone(),
-    };
-    let data = match serde_json::to_vec(&packet) {
-        Ok(data) => data,
-        Err(error) => {
-            tracing::warn!("No se pudo serializar el evento local: {}", error);
-            return false;
-        }
-    };
-
-    match socket.send_to(&data, target) {
-        Ok(_) => true,
-        Err(error) => {
-            tracing::warn!("No se pudo reenviar el input local a {}: {}", target, error);
-            false
-        }
-    }
+    conn_mgr.send(target, Frame::Input(event.clone())).await;
+    true
 }
 
 fn next_connected_peer(peers: &PeerList, current: Option<SocketAddr>) -> Option<SocketAddr> {
@@ -233,10 +221,7 @@ fn next_connected_peer(peers: &PeerList, current: Option<SocketAddr>) -> Option<
     }
 }
 
-fn set_active_peer_value(
-    active_peer: &Arc<Mutex<Option<SocketAddr>>>,
-    value: Option<SocketAddr>,
-) {
+fn set_active_peer_value(active_peer: &Arc<Mutex<Option<SocketAddr>>>, value: Option<SocketAddr>) {
     let mut current_active = active_peer.lock().unwrap();
     *current_active = value;
 }
@@ -246,17 +231,19 @@ fn apply_transfer(
     next: Option<SocketAddr>,
     peers: &PeerList,
     control_state: &ControlState,
-    data_port: u16,
+    conn_mgr: &ConnectionManager,
 ) {
     let source_name = control_state.lock().unwrap().local_name.clone();
+    let conn_mgr = conn_mgr.clone();
 
     if let Some(previous_addr) = previous {
-        let _ = send_control_message(
-            previous_addr,
-            &ControlMessage::Release {
-                source_name: source_name.clone(),
-            },
-        );
+        let mgr = conn_mgr.clone();
+        let msg = ControlMessage::Release {
+            source_name: source_name.clone(),
+        };
+        tokio::spawn(async move {
+            mgr.send(previous_addr, Frame::Control(msg)).await;
+        });
     }
 
     if let Some(next_addr) = next {
@@ -266,27 +253,14 @@ fn apply_transfer(
             state.mark_source_transfer(&target_label);
         }
 
-        let target_addr = SocketAddr::new(next_addr.ip(), data_port);
-        let _ = send_control_message(
-            target_addr,
-            &ControlMessage::Assign {
-                source_name: source_name,
-            },
-        );
+        let msg = ControlMessage::Assign { source_name };
+        tokio::spawn(async move {
+            conn_mgr.send(next_addr, Frame::Control(msg)).await;
+        });
     } else {
         let mut state = control_state.lock().unwrap();
         state.mark_local_control();
     }
-}
-
-fn send_control_message(target: SocketAddr, message: &ControlMessage) -> std::io::Result<()> {
-    let socket = StdUdpSocket::bind("0.0.0.0:0")?;
-    let packet = NetworkPacket::Control {
-        message: message.clone(),
-    };
-    let data = serde_json::to_vec(&packet)?;
-    socket.send_to(&data, target)?;
-    Ok(())
 }
 
 fn peer_label(peers: &PeerList, addr: SocketAddr) -> String {
@@ -311,7 +285,6 @@ fn record_hits(hits: &mut Vec<Instant>) -> bool {
 fn matches_mouse_command(command: &str, button: &MouseButton) -> bool {
     matches!(
         (command, button),
-        ("triple_right_click", MouseButton::Right)
-            | ("triple_middle_click", MouseButton::Middle)
+        ("triple_right_click", MouseButton::Right) | ("triple_middle_click", MouseButton::Middle)
     )
 }

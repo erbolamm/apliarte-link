@@ -22,8 +22,11 @@ serde_json = "1"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
-# Encriptación — para que los datos en red sean seguros
-rustls = { version = "0.23", features = ["ring"] }
+# Encriptación — TLS sobre TCP
+rustls = { version = "0.23", default-features = false, features = ["ring", "std"] }
+tokio-rustls = "0.26"
+rcgen = { version = "0.13", features = ["pem"] }
+x509-cert = "0.2"
 
 # Configuración desde archivos — como SharedPreferences en Flutter
 config = "0.14"
@@ -39,6 +42,9 @@ if-addrs = "0.13"
 
 # Inventario HID local para listar teclados y ratones conectados
 hidapi = "2.6"
+
+# Serialización binaria — reemplaza JSON para input en tiempo real
+rmp-serde = "1"
 
 # Errores más manejables
 anyhow = "1"

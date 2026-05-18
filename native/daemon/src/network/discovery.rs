@@ -31,13 +31,25 @@ enum DiscoveryMsg {
         name: String,
         #[serde(default)]
         instance_id: String,
+        #[serde(default = "default_transport")]
+        transport: String,
+        #[serde(default)]
+        version: [u16; 2],
     },
     HelloReply {
         port: u16,
         name: String,
         #[serde(default)]
         instance_id: String,
+        #[serde(default = "default_transport")]
+        transport: String,
+        #[serde(default)]
+        version: [u16; 2],
     },
+}
+
+fn default_transport() -> String {
+    "tcp".to_string()
 }
 
 /// Lista de peers descubiertos en la red local.
@@ -189,6 +201,8 @@ async fn handle_message(
             port,
             name,
             instance_id,
+            transport: _,
+            version: _,
         } => {
             if should_ignore_self_discovery(&instance_id, local_instance_id) {
                 tracing::debug!("Ignorando HELLO propio de {}", from.ip());
@@ -206,6 +220,8 @@ async fn handle_message(
                 port: data_port,
                 name: local_name.to_string(),
                 instance_id: local_instance_id.to_string(),
+                transport: "tcp".to_string(),
+                version: [1, 0],
             };
             if let Ok(data) = serde_json::to_vec(&reply) {
                 let reply_addr = SocketAddr::new(from.ip(), DISCOVERY_PORT);
@@ -216,6 +232,8 @@ async fn handle_message(
             port,
             name,
             instance_id,
+            transport: _,
+            version: _,
         } => {
             if should_ignore_self_discovery(&instance_id, local_instance_id) {
                 tracing::debug!("Ignorando HELLO_REPLY propio de {}", from.ip());
@@ -239,6 +257,8 @@ async fn send_hello(
         port: data_port,
         name: local_name.to_string(),
         instance_id: local_instance_id.to_string(),
+        transport: "tcp".to_string(),
+        version: [1, 0],
     };
     let data = serde_json::to_vec(&msg)?;
     let mut sent_any = false;

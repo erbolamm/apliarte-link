@@ -29,7 +29,7 @@ fn inject_sync(event: InputEvent) -> Result<()> {
     };
 
     let input = match event {
-        InputEvent::MouseMove { dx, dy } => INPUT {
+        InputEvent::MouseMove { dx, dy, .. } => INPUT {
             r#type: INPUT_MOUSE,
             Anonymous: windows::Win32::UI::Input::KeyboardAndMouse::INPUT_0 {
                 mi: MOUSEINPUT {
@@ -41,7 +41,11 @@ fn inject_sync(event: InputEvent) -> Result<()> {
             },
         },
 
-        InputEvent::MouseButton { button, pressed } => {
+        InputEvent::MouseButton {
+            button,
+            pressed,
+            seq: _,
+        } => {
             let flags = match (button, pressed) {
                 (MouseButton::Left, true) => MOUSEEVENTF_LEFTDOWN,
                 (MouseButton::Left, false) => MOUSEEVENTF_LEFTUP,
@@ -62,7 +66,10 @@ fn inject_sync(event: InputEvent) -> Result<()> {
         }
 
         InputEvent::KeyPress {
-            key_code, pressed, ..
+            seq: 0,
+            key_code,
+            pressed,
+            ..
         } => INPUT {
             r#type: INPUT_KEYBOARD,
             Anonymous: windows::Win32::UI::Input::KeyboardAndMouse::INPUT_0 {
@@ -118,8 +125,12 @@ pub fn start_switch_listener(
     control_state: ControlState,
     data_port: u16,
 ) -> Result<()> {
-    let send_socket = StdUdpSocket::bind("0.0.0.0:0")
-        .map_err(|error| anyhow::anyhow!("No se pudo abrir el socket de captura en Windows: {}", error))?;
+    let send_socket = StdUdpSocket::bind("0.0.0.0:0").map_err(|error| {
+        anyhow::anyhow!(
+            "No se pudo abrir el socket de captura en Windows: {}",
+            error
+        )
+    })?;
 
     let _ = WINDOWS_SWITCH_CONTEXT.set(WindowsSwitchContext {
         cfg,
@@ -138,29 +149,31 @@ pub fn start_switch_listener(
             use windows::Win32::Foundation::{HINSTANCE, LPARAM, LRESULT, WPARAM};
             use windows::Win32::System::LibraryLoader::GetModuleHandleW;
             use windows::Win32::UI::Input::KeyboardAndMouse::{VK_ESCAPE, VK_RSHIFT};
-            use windows::Win32::UI::WindowsAndMessaging::{KBDLLHOOKSTRUCT, MSLLHOOKSTRUCT};
             use windows::Win32::UI::WindowsAndMessaging::{
-                CallNextHookEx, DispatchMessageW, GetMessageW, SetWindowsHookExW,
-                TranslateMessage, UnhookWindowsHookEx, HC_ACTION, HHOOK, MSG,
-                WH_KEYBOARD_LL, WH_MOUSE_LL, WM_KEYDOWN, WM_KEYUP, WM_LBUTTONDOWN,
-                WM_LBUTTONUP, WM_MBUTTONDOWN, WM_MBUTTONUP, WM_MOUSEMOVE,
-                WM_MOUSEWHEEL, WM_RBUTTONDOWN, WM_RBUTTONUP, WM_SYSKEYDOWN,
+                CallNextHookEx, DispatchMessageW, GetMessageW, SetWindowsHookExW, TranslateMessage,
+                UnhookWindowsHookEx, HC_ACTION, HHOOK, MSG, WH_KEYBOARD_LL, WH_MOUSE_LL,
+                WM_KEYDOWN, WM_KEYUP, WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MBUTTONDOWN, WM_MBUTTONUP,
+                WM_MOUSEMOVE, WM_MOUSEWHEEL, WM_RBUTTONDOWN, WM_RBUTTONUP, WM_SYSKEYDOWN,
                 WM_SYSKEYUP,
             };
+            use windows::Win32::UI::WindowsAndMessaging::{KBDLLHOOKSTRUCT, MSLLHOOKSTRUCT};
 
-            extern "system" fn keyboard_hook(
-                code: i32,
-                wparam: WPARAM,
-                lparam: LPARAM,
-            ) -> LRESULT {
+            extern "system" fn keyboard_hook(code: i32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
                 use windows::Win32::Foundation::LRESULT;
                 use windows::Win32::UI::Input::KeyboardAndMouse::{VK_ESCAPE, VK_RSHIFT};
-                use windows::Win32::UI::WindowsAndMessaging::{CallNextHookEx, HC_ACTION, HHOOK, KBDLLHOOKSTRUCT, WM_KEYDOWN, WM_KEYUP, WM_SYSKEYDOWN, WM_SYSKEYUP};
+                use windows::Win32::UI::WindowsAndMessaging::{
+                    CallNextHookEx, HC_ACTION, HHOOK, KBDLLHOOKSTRUCT, WM_KEYDOWN, WM_KEYUP,
+                    WM_SYSKEYDOWN, WM_SYSKEYUP,
+                };
 
                 if code == HC_ACTION as i32 {
                     if let Some(context) = WINDOWS_SWITCH_CONTEXT.get() {
                         let msg = wparam.0 as u32;
-                        if msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN || msg == WM_KEYUP || msg == WM_SYSKEYUP {
+                        if msg == WM_KEYDOWN
+                            || msg == WM_SYSKEYDOWN
+                            || msg == WM_KEYUP
+                            || msg == WM_SYSKEYUP
+                        {
                             let info = unsafe { &*(lparam.0 as *const KBDLLHOOKSTRUCT) };
                             let input_cfg = context.cfg.lock().unwrap().input.clone();
 
@@ -199,11 +212,14 @@ pub fn start_switch_listener(
                             }
 
                             let pressed = msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN;
-                            if control::current_active_peer(&context.active_peer).is_some() && matched {
+                            if control::current_active_peer(&context.active_peer).is_some()
+                                && matched
+                            {
                                 return LRESULT(1);
                             }
 
                             let input_event = InputEvent::KeyPress {
+                                seq: 0,
                                 key_code: info.vkCode,
                                 pressed,
                                 modifiers: Modifiers::default(),
@@ -222,16 +238,11 @@ pub fn start_switch_listener(
                 unsafe { CallNextHookEx(HHOOK::default(), code, wparam, lparam) }
             }
 
-            extern "system" fn mouse_hook(
-                code: i32,
-                wparam: WPARAM,
-                lparam: LPARAM,
-            ) -> LRESULT {
+            extern "system" fn mouse_hook(code: i32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
                 use windows::Win32::Foundation::LRESULT;
                 use windows::Win32::UI::WindowsAndMessaging::{
-                    CallNextHookEx, HC_ACTION, HHOOK, WM_LBUTTONDOWN, WM_LBUTTONUP,
-                    WM_MBUTTONDOWN, WM_MBUTTONUP, WM_MOUSEMOVE, WM_MOUSEWHEEL,
-                    WM_RBUTTONDOWN, WM_RBUTTONUP,
+                    CallNextHookEx, HC_ACTION, HHOOK, WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MBUTTONDOWN,
+                    WM_MBUTTONUP, WM_MOUSEMOVE, WM_MOUSEWHEEL, WM_RBUTTONDOWN, WM_RBUTTONUP,
                 };
 
                 if code == HC_ACTION as i32 {
@@ -242,7 +253,8 @@ pub fn start_switch_listener(
                         if !input_cfg.armed {
                             context.detector.lock().unwrap().reset();
                             if wparam.0 as u32 == WM_MOUSEMOVE {
-                                *context.last_mouse_pos.lock().unwrap() = Some((info.pt.x, info.pt.y));
+                                *context.last_mouse_pos.lock().unwrap() =
+                                    Some((info.pt.x, info.pt.y));
                             }
                             return unsafe {
                                 CallNextHookEx(HHOOK::default(), code, wparam, lparam)
@@ -274,16 +286,17 @@ pub fn start_switch_listener(
                         }
 
                         if control::current_active_peer(&context.active_peer).is_some()
-                            && is_reserved_mouse_command(&input_cfg.mouse_switch_command, wparam.0 as u32)
+                            && is_reserved_mouse_command(
+                                &input_cfg.mouse_switch_command,
+                                wparam.0 as u32,
+                            )
                         {
                             return LRESULT(1);
                         }
 
-                        if let Some(input_event) = mouse_input_event(
-                            wparam.0 as u32,
-                            info,
-                            &context.last_mouse_pos,
-                        ) {
+                        if let Some(input_event) =
+                            mouse_input_event(wparam.0 as u32, info, &context.last_mouse_pos)
+                        {
                             if control::send_input_to_active_peer(
                                 context.send_socket.as_ref(),
                                 &context.active_peer,
@@ -299,18 +312,12 @@ pub fn start_switch_listener(
             }
 
             let module = GetModuleHandleW(None).unwrap_or_default();
-            let mouse_hook_handle = SetWindowsHookExW(
-                WH_MOUSE_LL,
-                Some(mouse_hook),
-                HINSTANCE(module.0),
-                0,
-            ).unwrap_or_default();
-            let keyboard_hook_handle = SetWindowsHookExW(
-                WH_KEYBOARD_LL,
-                Some(keyboard_hook),
-                HINSTANCE(module.0),
-                0,
-            ).unwrap_or_default();
+            let mouse_hook_handle =
+                SetWindowsHookExW(WH_MOUSE_LL, Some(mouse_hook), HINSTANCE(module.0), 0)
+                    .unwrap_or_default();
+            let keyboard_hook_handle =
+                SetWindowsHookExW(WH_KEYBOARD_LL, Some(keyboard_hook), HINSTANCE(module.0), 0)
+                    .unwrap_or_default();
 
             if mouse_hook_handle.is_invalid() || keyboard_hook_handle.is_invalid() {
                 tracing::error!("No se pudieron instalar los hooks globales de Windows");
@@ -326,7 +333,12 @@ pub fn start_switch_listener(
             let _ = UnhookWindowsHookEx(mouse_hook_handle);
             let _ = UnhookWindowsHookEx(keyboard_hook_handle);
         })
-        .map_err(|error| anyhow::anyhow!("No se pudo arrancar el listener global de Windows: {}", error))?;
+        .map_err(|error| {
+            anyhow::anyhow!(
+                "No se pudo arrancar el listener global de Windows: {}",
+                error
+            )
+        })?;
 
     Ok(())
 }
@@ -335,8 +347,7 @@ fn is_reserved_mouse_command(command: &str, message: u32) -> bool {
     use windows::Win32::UI::WindowsAndMessaging::{
         WM_MBUTTONDOWN, WM_MBUTTONUP, WM_RBUTTONDOWN, WM_RBUTTONUP,
     };
-    (command == "triple_right_click"
-        && (message == WM_RBUTTONDOWN || message == WM_RBUTTONUP))
+    (command == "triple_right_click" && (message == WM_RBUTTONDOWN || message == WM_RBUTTONUP))
         || (command == "triple_middle_click"
             && (message == WM_MBUTTONDOWN || message == WM_MBUTTONUP))
 }
@@ -347,8 +358,8 @@ fn mouse_input_event(
     last_mouse_pos: &Mutex<Option<(i32, i32)>>,
 ) -> Option<InputEvent> {
     use windows::Win32::UI::WindowsAndMessaging::{
-        WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MBUTTONDOWN, WM_MBUTTONUP, WM_MOUSEMOVE,
-        WM_MOUSEWHEEL, WM_RBUTTONDOWN, WM_RBUTTONUP,
+        WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MBUTTONDOWN, WM_MBUTTONUP, WM_MOUSEMOVE, WM_MOUSEWHEEL,
+        WM_RBUTTONDOWN, WM_RBUTTONUP,
     };
 
     match message {
@@ -370,26 +381,32 @@ fn mouse_input_event(
             }
         }
         WM_LBUTTONDOWN => Some(InputEvent::MouseButton {
+            seq: 0,
             button: MouseButton::Left,
             pressed: true,
         }),
         WM_LBUTTONUP => Some(InputEvent::MouseButton {
+            seq: 0,
             button: MouseButton::Left,
             pressed: false,
         }),
         WM_RBUTTONDOWN => Some(InputEvent::MouseButton {
+            seq: 0,
             button: MouseButton::Right,
             pressed: true,
         }),
         WM_RBUTTONUP => Some(InputEvent::MouseButton {
+            seq: 0,
             button: MouseButton::Right,
             pressed: false,
         }),
         WM_MBUTTONDOWN => Some(InputEvent::MouseButton {
+            seq: 0,
             button: MouseButton::Middle,
             pressed: true,
         }),
         WM_MBUTTONUP => Some(InputEvent::MouseButton {
+            seq: 0,
             button: MouseButton::Middle,
             pressed: false,
         }),

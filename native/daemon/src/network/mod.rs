@@ -1,105 +1,64 @@
-// Javier: Este módulo gestiona la comunicación con otros PCs por red local (LAN).
-// Analogía Flutter: es como el http.dart o Dio — pero en vez de HTTP usa UDP,
-// que es más rápido (sin confirmaciones de entrega) para input en tiempo real.
+// Network module: peer discovery + TCP+TLS transport.
 //
-// Protocolo:
-//   - Transporte: UDP (puerto 4242 por defecto)
-//   - Formato mensajes: JSON (en el futuro: binario con MessagePack para menos latencia)
-//   - Descubrimiento: mDNS (los PCs se encuentran solos en la red local, sin configurar IPs)
-//   - Encriptación: DTLS (UDP cifrado) — habilitado por defecto
+// Architecture:
+//   discovery (UDP 4244) — finds peers on the LAN
+//   transport (TCP 4242) — reliable encrypted input/control channel
 //
-// Roles (como cliente-servidor pero simétrico):
-//   - SENDER: el PC que tiene el foco del teclado/ratón en este momento
-//              Captura input y envía paquetes UDP
-//   - RECEIVER: los otros PCs
-//                Recibe paquetes UDP e inyecta el input en su SO
+// The old UDP+JSON input channel has been replaced by transport.rs.
 
 pub mod discovery;
-pub use discovery::{PeerEntry, PeerList};
+pub mod transport;
 
-use crate::control::ControlState;
+pub use discovery::{PeerEntry, PeerList};
+pub use transport::ConnectionManager;
+
 use crate::config::AppConfig;
-use crate::input::protocol::{ControlMessage, InputEvent, NetworkPacket};
+use crate::control::ControlState;
+use crate::input::protocol::Frame;
 use anyhow::Result;
-use tokio::net::UdpSocket;
+use std::net::SocketAddr;
+use tokio::net::TcpListener;
 use tokio::sync::mpsc::Sender;
 
-/// Arranca el servidor de red y el descubrimiento de peers.
-/// Devuelve la lista de peers para que otros módulos la usen.
+/// Start the network layer: discovery + TCP listener + connection manager.
+/// Returns the peer list and connection manager for other modules to use.
 pub async fn start(
-    event_tx: Sender<InputEvent>,
+    event_tx: Sender<(SocketAddr, Frame)>,
     cfg: AppConfig,
     control_state: ControlState,
-) -> Result<PeerList> {
+) -> Result<(PeerList, ConnectionManager)> {
     let local_name = control_state.lock().unwrap().local_name.clone();
-    let peers = discovery::start(cfg.network.port, local_name).await?;
-    tokio::spawn(serve(event_tx, cfg, control_state));
-    Ok(peers)
+
+    // Discovery (UDP 4244) — unchanged
+    let peers = discovery::start(cfg.network.port, local_name.clone()).await?;
+
+    // Transport (TCP 4242)
+    let listener = TcpListener::bind(format!("0.0.0.0:{}", cfg.network.port)).await?;
+    tracing::info!("📡 Servidor TCP escuchando en 0.0.0.0:{}", cfg.network.port);
+
+    let conn_mgr = transport::ConnectionPool::new(local_name, event_tx)?;
+
+    // Spawn accept loop
+    let accept_mgr = conn_mgr.clone();
+    tokio::spawn(async move {
+        accept_mgr.accept_loop(listener).await;
+    });
+
+    Ok((peers, conn_mgr))
 }
 
-async fn serve(event_tx: Sender<InputEvent>, cfg: AppConfig, control_state: ControlState) -> Result<()> {
-    let addr = format!("0.0.0.0:{}", cfg.network.port);
-    let socket = UdpSocket::bind(&addr).await?;
-    tracing::info!("📡 Servidor UDP escuchando en {}", addr);
-
-    let mut buf = vec![0u8; 4096];
-
-    loop {
-        // Javier: recv_from espera un paquete UDP — es como await en Flutter
-        // Se bloquea hasta que llega algo de cualquier PC de la red
-        let (len, peer_addr) = socket.recv_from(&mut buf).await?;
-        tracing::debug!("Paquete recibido de {}: {} bytes", peer_addr, len);
-
-        // Javier: Intentamos deserializar el paquete como un InputEvent
-        // Si falla (paquete corrupto, versión incompatible), lo ignoramos
-        match serde_json::from_slice::<NetworkPacket>(&buf[..len]) {
-            Ok(NetworkPacket::Input { event }) => {
-                if event_tx.send(event).await.is_err() {
-                    tracing::warn!("Canal de input cerrado — el servicio se está apagando");
-                    break;
-                }
-            }
-            Ok(NetworkPacket::Control { message }) => {
-                handle_control_message(&control_state, message);
-            }
-            Err(_) => match serde_json::from_slice::<InputEvent>(&buf[..len]) {
-                Ok(event) => {
-                    if event_tx.send(event).await.is_err() {
-                        tracing::warn!("Canal de input cerrado — el servicio se está apagando");
-                        break;
-                    }
-                }
-                Err(e) => {
-                    tracing::warn!("Paquete ignorado (no es un paquete válido): {}", e);
-                }
-            },
-        }
-    }
-
-    Ok(())
-}
-
-fn handle_control_message(control_state: &ControlState, message: ControlMessage) {
+/// Handle an inbound control frame from the transport layer.
+pub fn mod_handle_control(
+    control_state: &ControlState,
+    message: crate::input::protocol::ControlMessage,
+) {
     let mut state = control_state.lock().unwrap();
     match message {
-        ControlMessage::Assign { source_name } => {
+        crate::input::protocol::ControlMessage::Assign { source_name } => {
             state.mark_destination_assigned(&source_name);
         }
-        ControlMessage::Release { source_name } => {
+        crate::input::protocol::ControlMessage::Release { source_name } => {
             state.mark_destination_released(&source_name);
         }
     }
-}
-
-/// Envía un InputEvent a un PC remoto por UDP
-/// Javier: Esta función la llama el módulo de captura cuando el ratón
-/// llega al borde de la pantalla — es el "envío" del evento al otro PC
-#[allow(dead_code)]
-pub async fn send_event(socket: &UdpSocket, event: &InputEvent, target: &str) -> Result<()> {
-    let packet = NetworkPacket::Input {
-        event: event.clone(),
-    };
-    let data = serde_json::to_vec(&packet)?;
-    socket.send_to(&data, target).await?;
-    Ok(())
 }

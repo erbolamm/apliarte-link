@@ -11,9 +11,10 @@
 use crate::config::AppConfig;
 use crate::control::{self, CommandDetector, ControlState};
 use crate::input::protocol::{InputEvent, Modifiers, MouseButton};
+use crate::network::ConnectionManager;
 use crate::network::PeerList;
 use anyhow::Result;
-use std::net::{SocketAddr, UdpSocket as StdUdpSocket};
+use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
 
 /// Inyecta un evento de input en macOS
@@ -37,7 +38,7 @@ fn inject_sync(event: InputEvent) -> Result<()> {
         .map_err(|_| anyhow::anyhow!("No se pudo crear CGEventSource"))?;
 
     match event {
-        InputEvent::MouseMove { dx, dy } => {
+        InputEvent::MouseMove { dx, dy, .. } => {
             // Javier: Obtenemos la posición actual del ratón y le sumamos el delta
             // Es como currentOffset + Offset(dx, dy) en Flutter
             let current = CGEvent::new_mouse_event(
@@ -51,7 +52,11 @@ fn inject_sync(event: InputEvent) -> Result<()> {
             current.post(CGEventTapLocation::HID);
         }
 
-        InputEvent::MouseButton { button, pressed } => {
+        InputEvent::MouseButton {
+            button,
+            pressed,
+            seq: _,
+        } => {
             let btn = match button {
                 MouseButton::Left => CGMouseButton::Left,
                 MouseButton::Right => CGMouseButton::Right,
@@ -73,7 +78,7 @@ fn inject_sync(event: InputEvent) -> Result<()> {
             evt.post(CGEventTapLocation::HID);
         }
 
-        InputEvent::MouseScroll { dx, dy } => {
+        InputEvent::MouseScroll { dx, dy, .. } => {
             // TODO: implementar scroll con CGEventCreateScrollWheelEvent
             tracing::debug!("Scroll: dx={} dy={}", dx, dy);
         }
@@ -82,6 +87,7 @@ fn inject_sync(event: InputEvent) -> Result<()> {
             key_code,
             pressed,
             modifiers: _,
+            ..
         } => {
             // Javier: CGEvent para teclado — key_code es el código de tecla virtual
             let evt = CGEvent::new_keyboard_event(source, key_code as u16, pressed)
@@ -99,7 +105,7 @@ pub fn start_switch_listener(
     peers: PeerList,
     active_peer: Arc<Mutex<Option<SocketAddr>>>,
     control_state: ControlState,
-    data_port: u16,
+    conn_mgr: ConnectionManager,
 ) -> Result<()> {
     std::thread::Builder::new()
         .name("apliarte-link-switch-macos".to_string())
@@ -116,14 +122,7 @@ pub fn start_switch_listener(
             let callback_peers = peers.clone();
             let callback_active_peer = active_peer.clone();
             let callback_control_state = control_state.clone();
-            let send_socket = match StdUdpSocket::bind("0.0.0.0:0") {
-                Ok(socket) => Arc::new(socket),
-                Err(error) => {
-                    tracing::error!("No se pudo abrir el socket de captura en macOS: {}", error);
-                    return;
-                }
-            };
-            let callback_send_socket = send_socket.clone();
+            let callback_conn_mgr = conn_mgr.clone();
 
             let tap = CGEventTap::new(
                 CGEventTapLocation::HID,
@@ -206,7 +205,7 @@ pub fn start_switch_listener(
                             &callback_peers,
                             &callback_active_peer,
                             &callback_control_state,
-                            data_port,
+                            &callback_conn_mgr,
                         );
                         None
                     } else if control::current_active_peer(&callback_active_peer).is_some()
@@ -214,15 +213,13 @@ pub fn start_switch_listener(
                     {
                         None
                     } else if let Some(input_event) = capture_event_for_remote(event_type, event) {
-                        if control::send_input_to_active_peer(
-                            callback_send_socket.as_ref(),
-                            &callback_active_peer,
-                            &input_event,
-                        ) {
-                            None
-                        } else {
-                            Some(event.clone())
-                        }
+                        let mgr = callback_conn_mgr.clone();
+                        let peer = callback_active_peer.clone();
+                        let event_clone = input_event.clone();
+                        tokio::spawn(async move {
+                            control::send_input_to_active_peer(&mgr, &peer, &event_clone).await;
+                        });
+                        None
                     } else {
                         Some(event.clone())
                     }
@@ -248,7 +245,9 @@ pub fn start_switch_listener(
                 }
             }
         })
-        .map_err(|error| anyhow::anyhow!("No se pudo arrancar el listener global de macOS: {}", error))?;
+        .map_err(|error| {
+            anyhow::anyhow!("No se pudo arrancar el listener global de macOS: {}", error)
+        })?;
 
     Ok(())
 }
@@ -270,9 +269,9 @@ fn is_reserved_command_event(
         core_graphics::event::CGEventType::KeyDown
         | core_graphics::event::CGEventType::KeyUp
         | core_graphics::event::CGEventType::FlagsChanged => {
-            let key_code = event.get_integer_value_field(
-                core_graphics::event::EventField::KEYBOARD_EVENT_KEYCODE,
-            ) as u32;
+            let key_code = event
+                .get_integer_value_field(core_graphics::event::EventField::KEYBOARD_EVENT_KEYCODE)
+                as u32;
             matches_macos_keyboard_command(&input_cfg.keyboard_switch_command, key_code)
         }
         core_graphics::event::CGEventType::RightMouseDown
@@ -306,60 +305,66 @@ fn capture_event_for_remote(
             if dx == 0.0 && dy == 0.0 {
                 None
             } else {
-                Some(InputEvent::MouseMove { dx, dy })
+                Some(InputEvent::MouseMove { dx, dy, seq: 0 })
             }
         }
         CGEventType::LeftMouseDown => Some(InputEvent::MouseButton {
+            seq: 0,
             button: MouseButton::Left,
             pressed: true,
         }),
         CGEventType::LeftMouseUp => Some(InputEvent::MouseButton {
+            seq: 0,
             button: MouseButton::Left,
             pressed: false,
         }),
         CGEventType::RightMouseDown => Some(InputEvent::MouseButton {
+            seq: 0,
             button: MouseButton::Right,
             pressed: true,
         }),
         CGEventType::RightMouseUp => Some(InputEvent::MouseButton {
+            seq: 0,
             button: MouseButton::Right,
             pressed: false,
         }),
         CGEventType::OtherMouseDown | CGEventType::OtherMouseUp => {
-            let button_number = event.get_integer_value_field(EventField::MOUSE_EVENT_BUTTON_NUMBER);
+            let button_number =
+                event.get_integer_value_field(EventField::MOUSE_EVENT_BUTTON_NUMBER);
             let button = match button_number {
                 2 => MouseButton::Middle,
                 _ => return None,
             };
             Some(InputEvent::MouseButton {
+                seq: 0,
                 button,
                 pressed: matches!(event_type, CGEventType::OtherMouseDown),
             })
         }
         CGEventType::ScrollWheel => {
-            let dx = event.get_integer_value_field(EventField::SCROLL_WHEEL_EVENT_DELTA_AXIS_2)
-                as f64;
-            let dy = event.get_integer_value_field(EventField::SCROLL_WHEEL_EVENT_DELTA_AXIS_1)
-                as f64;
+            let dx =
+                event.get_integer_value_field(EventField::SCROLL_WHEEL_EVENT_DELTA_AXIS_2) as f64;
+            let dy =
+                event.get_integer_value_field(EventField::SCROLL_WHEEL_EVENT_DELTA_AXIS_1) as f64;
             if dx == 0.0 && dy == 0.0 {
                 None
             } else {
-                Some(InputEvent::MouseScroll { dx, dy })
+                Some(InputEvent::MouseScroll { dx, dy, seq: 0 })
             }
         }
         CGEventType::KeyDown | CGEventType::KeyUp => {
-            let key_code =
-                event.get_integer_value_field(EventField::KEYBOARD_EVENT_KEYCODE) as u32;
+            let key_code = event.get_integer_value_field(EventField::KEYBOARD_EVENT_KEYCODE) as u32;
             Some(InputEvent::KeyPress {
+                seq: 0,
                 key_code,
                 pressed: matches!(event_type, CGEventType::KeyDown),
                 modifiers: modifiers_from_flags(event.get_flags()),
             })
         }
         CGEventType::FlagsChanged => {
-            let key_code =
-                event.get_integer_value_field(EventField::KEYBOARD_EVENT_KEYCODE) as u32;
+            let key_code = event.get_integer_value_field(EventField::KEYBOARD_EVENT_KEYCODE) as u32;
             Some(InputEvent::KeyPress {
+                seq: 0,
                 key_code,
                 pressed: flags_changed_is_pressed(key_code, event.get_flags()),
                 modifiers: modifiers_from_flags(event.get_flags()),
@@ -369,10 +374,7 @@ fn capture_event_for_remote(
     }
 }
 
-fn flags_changed_is_pressed(
-    key_code: u32,
-    flags: core_graphics::event::CGEventFlags,
-) -> bool {
+fn flags_changed_is_pressed(key_code: u32, flags: core_graphics::event::CGEventFlags) -> bool {
     use core_graphics::event::{CGEventFlags, KeyCode};
 
     match key_code {
