@@ -206,8 +206,8 @@ jobs:
 
   release:
     name: Crear Release en GitHub
-    needs: [build, build-macos-app, build-windows-app]
-    if: needs.build.result == 'success' && needs.build-macos-app.result == 'success' && needs.build-windows-app.result == 'success'
+    needs: [build-macos-app, build-windows-app]
+    if: needs.build-macos-app.result == 'success' && needs.build-windows-app.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -220,7 +220,13 @@ jobs:
         run: |
           mv apliarte-link-aarch64-apple-darwin/apliarte-link-aarch64-apple-darwin       apliarte-link-macos-arm64
           mv apliarte-link-x86_64-apple-darwin/apliarte-link-x86_64-apple-darwin         apliarte-link-macos-x64
-          mv apliarte-link-x86_64-unknown-linux-gnu/apliarte-link-x86_64-unknown-linux-gnu apliarte-link-linux-x64
+          if [ -f "apliarte-link-x86_64-unknown-linux-gnu/apliarte-link-x86_64-unknown-linux-gnu" ]; then
+            mv apliarte-link-x86_64-unknown-linux-gnu/apliarte-link-x86_64-unknown-linux-gnu apliarte-link-linux-x64
+            echo "LINUX_BIN=apliarte-link-linux-x64" >> $GITHUB_ENV
+          else
+            echo "LINUX_BIN=" >> $GITHUB_ENV
+            echo "⚠️ Binario Linux no disponible (falló el build)"
+          fi
           mv "apliarte-link-x86_64-pc-windows-msvc.exe/apliarte-link-x86_64-pc-windows-msvc.exe" apliarte-link-windows-x64.exe
           # Apps completas — opcionales, solo si sus jobs terminaron bien
           if [ -f "apliarte-link-macos-app/apliarte-link-macos-app.zip" ]; then
@@ -247,8 +253,9 @@ jobs:
           if [[ "$TAG" == *alpha* ]] || [[ "$TAG" == *beta* ]]; then
             PRERELEASE="--prerelease"
           fi
-          # Binarios crudos siempre presentes
-          FILES="apliarte-link-macos-arm64 apliarte-link-macos-x64 apliarte-link-linux-x64 apliarte-link-windows-x64.exe"
+          # Binarios crudos siempre presentes (Linux opcional)
+          FILES="apliarte-link-macos-arm64 apliarte-link-macos-x64 apliarte-link-windows-x64.exe"
+          if [ -n "$LINUX_BIN" ]; then FILES="$LINUX_BIN $FILES"; fi
           # Apps completas si están disponibles
           if [ -n "$MACOS_APP" ]; then FILES="$MACOS_APP $FILES"; fi
           if [ -n "$WINDOWS_APP" ]; then FILES="$WINDOWS_APP $FILES"; fi
