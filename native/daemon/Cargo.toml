@@ -41,6 +41,7 @@ hostname = "0.4"
 if-addrs = "0.13"
 
 # Inventario HID local para listar teclados y ratones conectados
+[target.'cfg(any(target_os = "macos", target_os = "windows"))'.dependencies]
 hidapi = "2.6"
 
 # Serialización binaria — reemplaza JSON para input en tiempo real

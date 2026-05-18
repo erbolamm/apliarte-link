@@ -10,9 +10,10 @@
 use crate::config::AppConfig;
 use crate::control::{self, CommandDetector, ControlState};
 use crate::input::protocol::{InputEvent, Modifiers, MouseButton};
+use crate::network::ConnectionManager;
 use crate::network::PeerList;
 use anyhow::Result;
-use std::net::{SocketAddr, UdpSocket as StdUdpSocket};
+use std::net::SocketAddr;
 use std::sync::{Arc, Mutex, OnceLock};
 
 /// Inyecta un evento de input en Windows
@@ -112,8 +113,7 @@ struct WindowsSwitchContext {
     control_state: ControlState,
     detector: Mutex<CommandDetector>,
     last_mouse_pos: Mutex<Option<(i32, i32)>>,
-    send_socket: Arc<StdUdpSocket>,
-    data_port: u16,
+    conn_mgr: ConnectionManager,
 }
 
 static WINDOWS_SWITCH_CONTEXT: OnceLock<WindowsSwitchContext> = OnceLock::new();
@@ -123,15 +123,8 @@ pub fn start_switch_listener(
     peers: PeerList,
     active_peer: Arc<Mutex<Option<SocketAddr>>>,
     control_state: ControlState,
-    data_port: u16,
+    conn_mgr: ConnectionManager,
 ) -> Result<()> {
-    let send_socket = StdUdpSocket::bind("0.0.0.0:0").map_err(|error| {
-        anyhow::anyhow!(
-            "No se pudo abrir el socket de captura en Windows: {}",
-            error
-        )
-    })?;
-
     let _ = WINDOWS_SWITCH_CONTEXT.set(WindowsSwitchContext {
         cfg,
         peers,
@@ -139,8 +132,7 @@ pub fn start_switch_listener(
         control_state,
         detector: Mutex::new(CommandDetector::default()),
         last_mouse_pos: Mutex::new(None),
-        send_socket: Arc::new(send_socket),
-        data_port,
+        conn_mgr,
     });
 
     std::thread::Builder::new()
@@ -205,7 +197,7 @@ pub fn start_switch_listener(
                                         &context.peers,
                                         &context.active_peer,
                                         &context.control_state,
-                                        context.data_port,
+                                        &context.conn_mgr,
                                     );
                                     return LRESULT(1);
                                 }
@@ -224,13 +216,15 @@ pub fn start_switch_listener(
                                 pressed,
                                 modifiers: Modifiers::default(),
                             };
-                            if control::send_input_to_active_peer(
-                                context.send_socket.as_ref(),
-                                &context.active_peer,
-                                &input_event,
-                            ) {
-                                return LRESULT(1);
+                            {
+                                let mgr = context.conn_mgr.clone();
+                                let peer = context.active_peer.clone();
+                                let event = input_event.clone();
+                                tokio::spawn(async move {
+                                    control::send_input_to_active_peer(&mgr, &peer, &event).await;
+                                });
                             }
+                            return LRESULT(1);
                         }
                     }
                 }
@@ -280,7 +274,7 @@ pub fn start_switch_listener(
                                 &context.peers,
                                 &context.active_peer,
                                 &context.control_state,
-                                context.data_port,
+                                &context.conn_mgr,
                             );
                             return LRESULT(1);
                         }
@@ -297,13 +291,15 @@ pub fn start_switch_listener(
                         if let Some(input_event) =
                             mouse_input_event(wparam.0 as u32, info, &context.last_mouse_pos)
                         {
-                            if control::send_input_to_active_peer(
-                                context.send_socket.as_ref(),
-                                &context.active_peer,
-                                &input_event,
-                            ) {
-                                return LRESULT(1);
+                            {
+                                let mgr = context.conn_mgr.clone();
+                                let peer = context.active_peer.clone();
+                                let event = input_event.clone();
+                                tokio::spawn(async move {
+                                    control::send_input_to_active_peer(&mgr, &peer, &event).await;
+                                });
                             }
+                            return LRESULT(1);
                         }
                     }
                 }
