@@ -103,6 +103,31 @@
       observer.observe(el);
     });
   }
+  // ===== Fetch latest release version =====
+  (async function fetchLatestRelease() {
+    try {
+      const resp = await fetch('https://api.github.com/repos/erbolamm/apliarte-link/releases/latest');
+      if (!resp.ok) return;
+      const release = await resp.json();
+      const tag = release.tag_name || '';
+
+      // Update badge in hero
+      const badge = document.querySelector('.badge');
+      if (badge && tag) {
+        badge.textContent = '🟢 ' + tag + ' — macOS + Windows';
+      }
+
+      // Update download code blocks to use the specific tag (fallback from /latest/download/)
+      document.querySelectorAll('code[data-release]').forEach(function (code) {
+        if (tag) {
+          code.textContent = code.textContent.replace('/releases/latest/download/', '/releases/download/' + tag + '/');
+        }
+      });
+    } catch (_) {
+      // GitHub API might be rate-limited; /latest/download/ still works as fallback
+    }
+  })();
+
   // ===== Copy code buttons =====
   window.copyCode = function (id) {
     const el = document.getElementById(id);

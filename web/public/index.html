@@ -53,7 +53,7 @@
             <div class="hero-meta">
               <span data-i18n="hero.opensource">🆓 Gratis</span>
               <span data-i18n="hero.noads">🚫 Sin publicidad</span>
-              <span data-i18n="hero.privacy">🔒 Tráfico cifrado (DTLS)</span>
+              <span data-i18n="hero.privacy">🔒 Tráfico cifrado (TLS)</span>
             </div>
           </div>
           <div class="hero-visual" aria-hidden="true">
@@ -79,33 +79,33 @@
         <div class="features-grid">
           <div class="feature">
             <div class="feature-icon">🖱️</div>
-            <h3 data-i18n="what.f1.title">Switch automático</h3>
-            <p data-i18n="what.f1.desc">Mueve el ratón al borde y cambia de PC sin pulsar nada.</p>
+            <h3 data-i18n="what.f1.title">Cambio explícito</h3>
+            <p data-i18n="what.f1.desc">Transferí el control con un comando configurable (triple clic o tecla).</p>
           </div>
           <div class="feature">
             <div class="feature-icon">⌨️</div>
-            <h3 data-i18n="what.f2.title">Hotkey configurable</h3>
-            <p data-i18n="what.f2.desc">Cambia de PC con un atajo de teclado (Ctrl+Alt+Tab por defecto).</p>
+            <h3 data-i18n="what.f2.title">TCP + TLS</h3>
+            <p data-i18n="what.f2.desc">Conexión cifrada y confiable. Sin paquetes perdidos.</p>
           </div>
           <div class="feature">
-            <div class="feature-icon">🔒</div>
-            <h3 data-i18n="what.f3.title">Tráfico cifrado</h3>
-            <p data-i18n="what.f3.desc">DTLS sobre UDP. Tus pulsaciones nunca viajan en claro.</p>
+            <div class="feature-icon">⚡</div>
+            <h3 data-i18n="what.f3.title">MessagePack binario</h3>
+            <p data-i18n="what.f3.desc">8× más rápido que JSON. Input en tiempo real sin latencia.</p>
           </div>
           <div class="feature">
-            <div class="feature-icon">🌐</div>
-            <h3 data-i18n="what.f4.title">Descubrimiento automático</h3>
-            <p data-i18n="what.f4.desc">Los ordenadores con tu cuenta se encuentran solos en la red local.</p>
+            <div class="feature-icon">👥</div>
+            <h3 data-i18n="what.f4.title">Privacidad por amigos</h3>
+            <p data-i18n="what.f4.desc">Solo los equipos de tus amigos te ven. Nadie más en la red.</p>
           </div>
           <div class="feature">
             <div class="feature-icon">🎨</div>
-            <h3 data-i18n="what.f5.title">App nativa</h3>
-            <p data-i18n="what.f5.desc">Hecha en Flutter Desktop. Tema claro y oscuro.</p>
+            <h3 data-i18n="what.f5.title">App nativa Flutter</h3>
+            <p data-i18n="what.f5.desc">Interfaz moderna en macOS y Windows. Tema claro y oscuro.</p>
           </div>
           <div class="feature">
-            <div class="feature-icon">📦</div>
-            <h3 data-i18n="what.f6.title">Perfiles exportables</h3>
-            <p data-i18n="what.f6.desc">Guarda y comparte configuraciones en JSON.</p>
+            <div class="feature-icon">🔍</div>
+            <h3 data-i18n="what.f6.title">Descubrimiento automático</h3>
+            <p data-i18n="what.f6.desc">Tus equipos se encuentran solos en la red local.</p>
           </div>
         </div>
       </div>
@@ -125,7 +125,7 @@
           <div class="install-step">
             <span class="step-label">Abrí Terminal y pegá esto — descarga, descomprime, quita el bloqueo y lanza la app</span>
             <div class="code-line">
-              <code id="mac-all">cd ~/Downloads &amp;&amp; curl -L https://github.com/erbolamm/apliarte-link/releases/download/v0.1.1-alpha/apliarte-link-macos-app.zip -o apliarte-link.zip &amp;&amp; unzip -o apliarte-link.zip &amp;&amp; xattr -dr com.apple.quarantine apliarte_link.app &amp;&amp; open apliarte_link.app</code>
+              <code id="mac-all" data-release="mac">cd ~/Downloads &amp;&amp; curl -L https://github.com/erbolamm/apliarte-link/releases/latest/download/apliarte-link-macos-app.zip -o apliarte-link.zip &amp;&amp; unzip -o apliarte-link.zip &amp;&amp; xattr -dr com.apple.quarantine apliarte_link.app &amp;&amp; open apliarte_link.app</code>
               <button class="copy-btn" onclick="copyCode('mac-all')">Copiar</button>
             </div>
           </div>
@@ -140,7 +140,7 @@
           <div class="install-step">
             <span class="step-label">Abrí CMD o PowerShell como administrador y pegá esto — descarga, descomprime, desbloquea y lanza la app</span>
             <div class="code-line">
-              <code id="win-all">powershell -NoProfile -ExecutionPolicy Bypass -Command "$d=Join-Path $env:USERPROFILE 'Downloads'; Set-Location $d; Stop-Process -Name apliarte_link,apliarte-link -ErrorAction SilentlyContinue; Invoke-WebRequest -Uri 'https://github.com/erbolamm/apliarte-link/releases/download/v0.1.1-alpha/apliarte-link-windows-app.zip' -OutFile 'apliarte-link.zip'; if (Test-Path '.\apliarte-link') { Remove-Item '.\apliarte-link' -Recurse -Force }; Expand-Archive '.\apliarte-link.zip' -DestinationPath '.\apliarte-link' -Force; Get-ChildItem '.\apliarte-link' -Recurse | Unblock-File; Start-Process '.\apliarte-link\apliarte_link.exe'"</code>
+              <code id="win-all" data-release="win">powershell -NoProfile -ExecutionPolicy Bypass -Command "$d=Join-Path $env:USERPROFILE 'Downloads'; Set-Location $d; Stop-Process -Name apliarte_link,apliarte-link -ErrorAction SilentlyContinue; Invoke-WebRequest -Uri 'https://github.com/erbolamm/apliarte-link/releases/latest/download/apliarte-link-windows-app.zip' -OutFile 'apliarte-link.zip'; if (Test-Path '.\apliarte-link') { Remove-Item '.\apliarte-link' -Recurse -Force }; Expand-Archive '.\apliarte-link.zip' -DestinationPath '.\apliarte-link' -Force; Get-ChildItem '.\apliarte-link' -Recurse | Unblock-File; Start-Process '.\apliarte-link\apliarte_link.exe'"</code>
               <button class="copy-btn" onclick="copyCode('win-all')">Copiar</button>
             </div>
           </div>
@@ -211,80 +211,48 @@
             <div class="roadmap-dot"></div>
             <div class="roadmap-content">
               <span class="roadmap-status" data-i18n="roadmap.s.done">Listo</span>
-              <h4 data-i18n="roadmap.r1.title">Base KVM por red local en macOS</h4>
-              <p data-i18n="roadmap.r1.desc">Captura e inyección en macOS, hotkey, edge switch y envío UDP. Ya existe la base.</p>
+              <h4 data-i18n="roadmap.r1.title">Fase 0 — MVP: daemon Rust + UI Flutter</h4>
+              <p data-i18n="roadmap.r1.desc">Captura/inyección en macOS y Windows, discovery UDP, cambio por comando explícito, IPC.</p>
             </div>
           </div>
           <div class="roadmap-item progress">
             <div class="roadmap-dot"></div>
             <div class="roadmap-content">
               <span class="roadmap-status" data-i18n="roadmap.s.progress">En curso</span>
-              <h4 data-i18n="roadmap.r2.title">App usable en macOS y Windows</h4>
-              <p data-i18n="roadmap.r2.desc">UI + daemon + arranque real en ambas plataformas. El objetivo es instalar y abrir sin pelearse con el entorno.</p>
+              <h4 data-i18n="roadmap.r2.title">Fase 1 — Protocolo confiable: TCP+TLS+MessagePack</h4>
+              <p data-i18n="roadmap.r2.desc">Migración de UDP+JSON a TCP+TLS+MessagePack. Handshake de versión, keep-alive, conexiones persistentes.</p>
             </div>
           </div>
           <div class="roadmap-item next">
             <div class="roadmap-dot"></div>
             <div class="roadmap-content">
               <span class="roadmap-status" data-i18n="roadmap.s.next">Siguiente</span>
-              <h4 data-i18n="roadmap.r3.title">Ratón y teclado básicos entre Mac y Windows</h4>
-              <p data-i18n="roadmap.r3.desc">Movimiento, clics, scroll y teclado esencial funcionando entre dos equipos.</p>
+              <h4 data-i18n="roadmap.r3.title">Fase 2 — Descubrimiento privado por amigos</h4>
+              <p data-i18n="roadmap.r3.desc">Registro por correo, amigos mutuos, rendezvous server. Solo te ven equipos que autorizaste.</p>
             </div>
           </div>
           <div class="roadmap-item planned">
             <div class="roadmap-dot"></div>
             <div class="roadmap-content">
               <span class="roadmap-status" data-i18n="roadmap.s.planned">Planificado</span>
-              <h4 data-i18n="roadmap.r4.title">Estabilidad, permisos y empaquetado</h4>
-              <p data-i18n="roadmap.r4.desc">Cerrar permisos del sistema, reconexión y paquetes descargables que una persona normal pueda usar.</p>
+              <h4 data-i18n="roadmap.r4.title">Fase 3 — Calidad de input: edge-switching y keymap</h4>
+              <p data-i18n="roadmap.r4.desc">Transición por borde de pantalla, mapeo de layouts de teclado (ES↔US↔LATAM), multi-monitor.</p>
             </div>
           </div>
           <div class="roadmap-item planned">
             <div class="roadmap-dot"></div>
             <div class="roadmap-content">
               <span class="roadmap-status" data-i18n="roadmap.s.planned">Planificado</span>
-              <h4 data-i18n="roadmap.r5.title">Portapapeles compartido</h4>
-              <p data-i18n="roadmap.r5.desc">Copiar en un equipo y pegar en el otro. Después del MVP base.</p>
-            </div>
-          </div>
-          <div class="roadmap-item planned">
-            <div class="roadmap-dot"></div>
-            <div class="roadmap-content">
-              <span class="roadmap-status" data-i18n="roadmap.s.planned">Planificado</span>
-              <h4 data-i18n="roadmap.r6.title">Cifrado DTLS y hardening de red</h4>
-              <p data-i18n="roadmap.r6.desc">Asegurar el tráfico y cerrar huecos de fiabilidad cuando el flujo básico ya sea estable.</p>
+              <h4 data-i18n="roadmap.r5.title">Fase 4 — Portapapeles, archivos y notificaciones</h4>
+              <p data-i18n="roadmap.r5.desc">Clipboard sharing, arrastrar y soltar archivos, notificaciones push entre amigos.</p>
             </div>
           </div>
           <div class="roadmap-item future">
             <div class="roadmap-dot"></div>
             <div class="roadmap-content">
               <span class="roadmap-status" data-i18n="roadmap.s.future">Idea</span>
-              <h4 data-i18n="roadmap.r7.title">Soporte Linux</h4>
-              <p data-i18n="roadmap.r7.desc">Volver a Linux cuando macOS y Windows ya tengan el MVP usable cerrado.</p>
-            </div>
-          </div>
-          <div class="roadmap-item future">
-            <div class="roadmap-dot"></div>
-            <div class="roadmap-content">
-              <span class="roadmap-status" data-i18n="roadmap.s.future">Idea</span>
-              <h4 data-i18n="roadmap.r8.title">Cuentas y vinculación simplificada</h4>
-              <p data-i18n="roadmap.r8.desc">Login, pairing o modos locales más cómodos cuando el intercambio básico ya esté resuelto.</p>
-            </div>
-          </div>
-          <div class="roadmap-item future">
-            <div class="roadmap-dot"></div>
-            <div class="roadmap-content">
-              <span class="roadmap-status" data-i18n="roadmap.s.future">Idea</span>
-              <h4 data-i18n="roadmap.r9.title">Compartir archivos entre dispositivos</h4>
-              <p data-i18n="roadmap.r9.desc">Arrastrar y soltar archivos entre equipos vinculados.</p>
-            </div>
-          </div>
-          <div class="roadmap-item future">
-            <div class="roadmap-dot"></div>
-            <div class="roadmap-content">
-              <span class="roadmap-status" data-i18n="roadmap.s.future">Idea</span>
-              <h4 data-i18n="roadmap.r10.title">Audio y extras de periféricos</h4>
-              <p data-i18n="roadmap.r10.desc">Micrófono, auriculares y funciones avanzadas cuando el núcleo ya sea fiable.</p>
+              <h4 data-i18n="roadmap.r6.title">Fase 5 — Linux, app móvil y distribución</h4>
+              <p data-i18n="roadmap.r6.desc">Soporte Linux (X11+Wayland), app compañera iOS/Android, firma de binarios, auto-update.</p>
             </div>
           </div>
         </div>
