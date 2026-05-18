@@ -37,16 +37,121 @@ Sin cables. Sin dongles. Sin hardware extra.
 
 > El foco inmediato no es meter extras. El foco es cerrar una primera app usable en macOS y Windows donde ya se pueda trabajar con ratón y teclado entre dos equipos.
 
-## Roadmap inmediato
+## Roadmap
 
-- Sacar una app de macOS que arranque bien, pida permisos y pueda usarse sin pasos raros.
-- Sacar una app de Windows que arranque bien y pueda enlazarse con la de macOS.
-- Cerrar el flujo básico entre ambos: mover ratón, clicks, scroll y teclado esencial.
-- Hacer que el cambio de control sea explícito y configurable por comando, sin depender del borde de pantalla en la primera versión.
-- Mantener teclado y ratón unidos en el MVP: el usuario asigna ambos a la vez al equipo activo.
-- Mostrar una confirmación visual clara tanto en el equipo origen como en el destino cuando cambie la asignación.
-- Resolver estabilidad del enlace local, selección de equipo activo y empaquetado descargable.
-- Dejar para después del MVP: clipboard, DTLS, Linux, cuentas y extras de periféricos.
+### Principios de diseño
+
+1. **Privacidad por defecto** — solo equipos de amigos mutuos se ven entre sí.
+2. **Confiabilidad sobre velocidad** — TCP con TLS antes que UDP crudo.
+3. **Cambio explícito como base** — el edge-switching llega después, no reemplaza el comando.
+4. **Referente deskflow** — 24 años de lecciones aprendidas por el KVM software más usado del mundo.
+
+---
+
+### Fase 0 — MVP actual (ahora)
+
+> Lo que ya está andando o casi.
+
+- [x] Daemon Rust con captura/inyección en macOS (CGEventTap) y Windows (SendInput)
+- [x] Discovery UDP por broadcast local — los peers se encuentran solos en la LAN
+- [x] App Flutter Desktop con UI básica (on/off, lista de peers, settings)
+- [x] IPC entre Flutter y daemon vía TCP localhost
+- [x] Cambio de control por comando explícito (triple clic derecho / triple Shift)
+- [x] Confirmación visual en origen y destino al transferir el control
+- [ ] Empaquetado descargable macOS (.dmg) y Windows (.msi/.exe)
+- [ ] Test end-to-end real entre dos equipos físicos
+
+**Stack:** Rust + Flutter · JSON sobre UDP 4242 · Discovery UDP 4244
+
+---
+
+### Fase 1 — Protocolo confiable 🔒
+
+> Reemplazar la base de transporte antes de que escale el resto.
+
+**Por qué:** UDP pierde paquetes y un `MouseUp` perdido deja el botón pegado en el destino. TCP + TLS es lo que usan deskflow y Lan Mouse por este motivo exacto.
+
+- [ ] Migrar transporte de **UDP → TCP** en puerto 4242
+- [ ] Agregar **TLS** con certificados autofirmados por sesión (DTLS se descarta: TCP+TLS es más simple y probado)
+- [ ] Handshake de versión de protocolo (negociar versión común entre peers)
+- [ ] **Keep-alive** cada 3s con timeout tras 3 perdidos → detectar peers caídos al instante
+- [ ] Cambiar serialización de **JSON → MessagePack** (reducción ~8x en latencia y ancho de banda)
+- [ ] Canal de control separado del canal de input (comandos no compiten con eventos de ratón)
+
+**Estado objetivo:** la conexión entre dos equipos no pierde eventos, va cifrada, y detecta desconexiones en <10 segundos.
+
+---
+
+### Fase 2 — Descubrimiento privado por amigos 👥
+
+> El modelo que mencionaste: solo te ven equipos de amigos logueados.
+
+**Por qué:** hoy cualquier equipo en tu red WiFi ve tu daemon y sabe que existe ApliArte Link. Con este modelo, tu ordenador es invisible salvo para las personas que vos autorizaste.
+
+**Cómo funciona:**
+1. Te registrás con tu correo electrónico (o Google/Apple OAuth).
+2. Agregás amigos por correo. La relación es **mutua**: ambos tienen que aceptarse.
+3. Cuando dos amigos están en la misma red local, un servidor de rendezvous (Firebase o Rust) les presenta las IPs locales.
+4. Los daemons se conectan **directamente** por TCP+TLS local. Los datos nunca pasan por el servidor.
+5. Si no hay amigos mutuos cerca, tu equipo no anuncia nada y no ve a nadie.
+
+- [ ] Registro/login por correo + OAuth (Google/Apple)
+- [ ] Lista de amigos con solicitud y aceptación mutua
+- [ ] Servidor de rendezvous para emparejar IPs locales de amigos mutuos
+- [ ] Eliminar broadcast abierto: el discovery solo responde a amigos autenticados
+- [ ] UI de amigos en Flutter (agregar, aceptar, eliminar, ver estado)
+- [ ] Modo "sin cuenta" offline para desarrollo y pruebas locales
+
+**Estado objetivo:** abrís la app, ves solo los equipos de tus amigos que están cerca, y hacés clic para tomar el control. Nadie más te ve.
+
+---
+
+### Fase 3 — Calidad de input 🎯
+
+> Pulir la experiencia de teclado y ratón para que sea indistinguible de tenerlos conectados físicamente.
+
+- [ ] **Mapeo de layouts de teclado**: si un Mac español manda una `ñ`, un Windows US la recibe como `ñ`, no como un código roto. Deskflow tiene `KeyMap` + `KeyboardLayoutManager` — nosotros necesitamos al menos una tabla de equivalencia ES↔US↔LATAM.
+- [ ] **Modelo de pantallas y edge-switching**: cada equipo declara la geometría de sus monitores. El usuario configura qué borde da a qué amigo ("a la derecha de mi pantalla está la Mac de Javier"). El cursor cruza el borde y aparece en el otro equipo.
+- [ ] **Multi-monitor por máquina**: un equipo con 2 pantallas debe manejarlas como una superficie unificada antes de decidir bordes hacia peers.
+- [ ] **Modifiers robustos**: Ctrl, Alt, Shift y Meta viajan correctamente incluso con combinaciones complejas.
+- [ ] **Autorepeat de teclas**: mantener una tecla pulsada genera la cadencia correcta en el destino.
+
+**Estado objetivo:** mover el ratón al borde derecho de tu pantalla y verlo aparecer en la pantalla del amigo, con el teclado siguiéndolo. Escribir en español en un Mac y que un Windows US lo entienda.
+
+---
+
+### Fase 4 — Funcionalidades extendidas 📋
+
+> Lo que deskflow ya tiene y nuestros usuarios van a pedir.
+
+- [ ] **Clipboard sharing**: copiás texto/imagen en un equipo y pegás en el otro. Deskflow dedica cientos de líneas a esto con converters por SO y formato (texto, HTML, bitmap, UTF-8/16). Lo atacamos con: texto plano → HTML → imágenes → archivos.
+- [ ] **Arrastrar y soltar archivos** entre equipos (pequeños, por la red local)
+- [ ] **Notificaciones push**: cuando un amigo se conecta/desconecta, o cuando te transfiere el control
+- [ ] **Temas visuales** (claro/oscuro) y personalización de la UI
+- [ ] **Logs e historial** de conexiones para diagnosticar problemas
+- [ ] **Exportar/importar configuración** (JSON) para respaldo y migración
+
+---
+
+### Fase 5 — Multiplataforma completa 🌍
+
+- [ ] **Linux** con soporte real (X11 + Wayland vía libei, como deskflow y Lan Mouse)
+- [ ] **App móvil compañera** (iOS/Android) para ver estado, recibir notificaciones y activar/desactivar remotamente
+- [ ] Binarios firmados y notarizados (Apple notarization, Windows Authenticode)
+- [ ] Auto-update desde GitHub Releases
+- [ ] Instalador one-click en las tres plataformas de escritorio
+
+---
+
+### Referencias técnicas
+
+| Proyecto | Lenguaje | Año | Lo que nos enseña |
+|----------|----------|-----|-------------------|
+| [Deskflow](https://github.com/deskflow/deskflow) | C++ | 2001 | Protocolo binario, TCP+TLS, modelo de pantalla, keymap, clipboard, 25.8k ⭐ |
+| [Lan Mouse](https://github.com/feschber/lan-mouse) | Rust | 2023 | Implementación Rust compatible con deskflow, crates input-capture/emulation, 4.8k ⭐ |
+| [Input Leap](https://github.com/input-leap/input-leap) | C++ | 2022 | Fork de Barrier/Deskflow (inactivo) — referencia histórica |
+
+> **Nota:** ApliArte Link no busca ser compatible con el protocolo de deskflow. Aprendemos de su arquitectura pero mantenemos nuestra propia identidad: P2P simétrico, privacidad por amigos, Flutter como UI.
 
 ## Topología de pruebas debug
 
@@ -68,37 +173,92 @@ apliarte-link/
 │   └── src/
 │       ├── input/
 │       │   ├── macos.rs          CGEventTap — captura e inyección macOS
-│       │   ├── windows.rs        Captura e inyección Windows
-│       │   ├── linux.rs          uinput — inyección Linux (esqueleto)
-│       │   ├── protocol.rs       InputEvent (MouseMove, KeyPress…)
+│       │   ├── windows.rs        SendInput — captura e inyección Windows
+│       │   ├── linux.rs          uinput/libei — inyección Linux (esqueleto)
+│       │   ├── keymap.rs         🔜 Mapeo de layouts ES↔US↔LATAM
+│       │   ├── protocol.rs       InputEvent + handshake de versión
 │       │   └── mod.rs            Orquestación SENDER/RECEIVER
-│       ├── network/mod.rs        UDP port 4242 — UdpSender + receiver
+│       ├── network/
+│       │   ├── transport.rs      🔜 TCP+TLS+MessagePack (hoy UDP+JSON)
+│       │   ├── discovery.rs      UDP 4244 + 🔜 rendezvous autenticado
+│       │   └── keepalive.rs      🔜 Health checks cada 3s
+│       ├── auth/                 🔜 Identidad, OAuth, lista de amigos
+│       ├── screen/               🔜 Modelo de pantallas y edge-switching
+│       ├── clipboard/            🔜 Portapapeles compartido
 │       ├── ipc/mod.rs            TCP 127.0.0.1:4243 — comunicación con UI
 │       └── config.rs             JSON en AppData / Library
-├── apps/apliarte_link/              ← App Flutter Desktop (panel de configuración)
-├── packages/apliarte_link_core/     ← Modelos y contratos compartidos entre UI e IPC
+├── apps/apliarte_link/              ← App Flutter Desktop (panel de control)
+├── packages/apliarte_link_core/     ← Modelos y contratos compartidos UI↔IPC
 ├── web/                             ← Landing page (Firebase Hosting)
 └── .github/workflows/
-  └── release.yml                  ← Publica binarios y apps empaquetadas en GitHub Releases
+  └── release.yml                  ← Publica binarios y apps en GitHub Releases
 ```
 
-**Core (Rust):** corre de fondo, captura input del SO, lo envía por UDP al otro PC y lo inyecta.  
-**Modos:** cada instancia puede ser SENDER (captura y envía) o RECEIVER (recibe e inyecta), según la configuración.
+**Core (Rust):** corre de fondo, captura input del SO, lo envía por TCP al equipo amigo y lo inyecta.  
+**Modos:** cada instancia puede ser SENDER (captura y envía) o RECEIVER (recibe e inyecta), intercambiables al vuelo.  
+**🔜** = planificado para la fase indicada en el roadmap.
+
+### Flujo de conexión con amigos
+
+```
+Registro inicial:
+  App Flutter  →  Servidor ApliArte (auth.apliarte.com)
+  · Registro por correo + OAuth
+  · Agregar amigos por correo
+  · Aceptación mutua
+
+Conexión diaria:
+  Daemon Rust  →  Servidor rendezvous
+  · "Estoy en IP 192.168.1.42, mis amigos son [A, B]"
+  · Servidor responde: "A está en 192.168.1.30, misma red"
+  Daemon Rust  →  TCP+TLS directo a 192.168.1.30:4242
+  · Input nunca pasa por el servidor
+  · Sin amigos cerca → no se anuncia nada
+```
 
 ### Protocolo de red
 
-- Input y control entre equipos: **UDP 4242**.
-- Discovery y presencia de peers: **UDP 4244**.
-- UI Flutter contra daemon local: **TCP 127.0.0.1:4243**.
-- Serialización: **JSON**.
+```
+┌──────────────────────────────────────────────────────┐
+│  Fase 0 (ahora)                                      │
+│  Input:       UDP 4242  · JSON                       │
+│  Discovery:   UDP 4244  · broadcast abierto          │
+│  UI↔Daemon:  TCP 127.0.0.1:4243  · JSON Lines       │
+├──────────────────────────────────────────────────────┤
+│  Fase 1 (próxima)                                    │
+│  Input:       TCP 4242  · TLS  · MessagePack         │
+│  Control:     TCP 4242  · TLS  · MessagePack         │
+│  Keep-alive:  TCP 4242  cada 3s                      │
+├──────────────────────────────────────────────────────┤
+│  Fase 2 (descubrimiento privado)                     │
+│  Discovery:   servidor rendezvous + LAN directa      │
+│  Auth:        correo + OAuth + amigos mutuos         │
+└──────────────────────────────────────────────────────┘
+```
 
-### Cambio de control actual
+- **Fase 0:** JSON sobre UDP. Simple para prototipado pero frágil (paquetes perdidos, sin cifrado).
+- **Fase 1:** TCP + TLS + MessagePack. El estándar de deskflow y Lan Mouse. Confiable y rápido.
+- **Fase 2:** Descubrimiento autenticado. Solo los amigos mutuos en la misma red local se encuentran.
 
-- MVP actual: **cambio explícito configurable**.
-- Comandos por defecto:
+### Modelo de privacidad
+
+ApliArte Link no expone tu equipo a toda la red local. Usa un modelo de **amigos mutuos**:
+
+1. **Identidad:** te registrás con tu correo electrónico.
+2. **Confianza:** agregás amigos por correo y ambos se aceptan mutuamente.
+3. **Visibilidad:** solo los equipos de amigos mutuos que están en tu misma red local aparecen en tu lista.
+4. **Conexión directa:** los datos de input viajan directo entre equipos por TCP+TLS local. Nunca pasan por un servidor externo.
+5. **Sin cuenta (offline):** para desarrollo, pruebas o redes de confianza, se puede usar sin registro — el discovery por broadcast local sigue disponible.
+
+Esto combina la baja latencia de una conexión LAN directa con la privacidad de un sistema de contactos: no cualquiera cerca tuyo puede verte.
+
+### Cambio de control
+
+- **MVP actual y Fase 1:** cambio explícito configurable.
   - teclado: **triple Shift derecho**
   - ratón: **triple clic derecho**
-- El gesto por borde existe como opción, pero el flujo recomendado del MVP es con comando explícito.
+- **Fase 3:** se agrega **edge-switching** opcional: el cursor cruza el borde de pantalla y aparece en el equipo del amigo.
+- Los dos modos conviven: comando explícito para el control consciente, borde de pantalla para flujo continuo.
 - La UI muestra confirmación visual en origen y destino cuando cambia la asignación.
 
 ---
