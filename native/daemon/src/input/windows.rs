@@ -67,7 +67,6 @@ fn inject_sync(event: InputEvent) -> Result<()> {
         }
 
         InputEvent::KeyPress {
-            seq: 0,
             key_code,
             pressed,
             ..
@@ -373,6 +372,7 @@ fn mouse_input_event(
                 Some(InputEvent::MouseMove {
                     dx: delta.0 as f64,
                     dy: delta.1 as f64,
+                    seq: 0,
                 })
             }
         }
@@ -414,6 +414,7 @@ fn mouse_input_event(
                 Some(InputEvent::MouseScroll {
                     dx: 0.0,
                     dy: wheel_delta,
+                    seq: 0,
                 })
             }
         }
