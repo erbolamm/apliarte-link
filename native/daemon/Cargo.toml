@@ -56,7 +56,7 @@ hidapi = "2.6"
 [target.'cfg(target_os = "macos")'.dependencies]
 # Input en macOS — acceso a CGEvent (API del sistema de Apple)
 core-foundation = "0.10"
-core-graphics = "0.24"
+core-graphics = { version = "0.24", features = ["highsierra"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 # Input en Windows — acceso a SendInput (API Win32)
