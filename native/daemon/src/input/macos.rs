@@ -110,7 +110,7 @@ fn inject_sync(event: InputEvent) -> Result<()> {
             // Implementado: CGEventCreateScrollWheelEvent (rueda con signo, línea/píxel)
             let evt = CGEvent::new_scroll_event(
                 source,
-                core_graphics::event::CGScrollEventUnit::PIXEL,
+                core_graphics::event::ScrollEventUnit::PIXEL,
                 2,
                 dy as i32,
                 dx as i32,
