@@ -151,16 +151,16 @@
         <div class="install-block">
           <div class="install-header">
             <span class="install-os">🐧 Linux</span>
-            <span class="install-sub">x64 — listo para probar (X11 / Wayland vía uinput)</span>
+            <span class="install-sub">x64 — app completa (Flutter + daemon embebido, X11/Wayland vía uinput)</span>
           </div>
           <div class="install-step">
-            <span class="step-label">Abrí la terminal y pegá esto — descarga, da permiso de ejecución y lanza el daemon</span>
+            <span class="step-label">Abrí la terminal y pegá esto — descarga, descomprime y lanza la app</span>
             <div class="code-line">
-              <code id="linux-all" data-release="linux">mkdir -p ~/Downloads &amp;&amp; cd ~/Downloads &amp;&amp; curl -L https://apliarte-link.web.app/downloads/apliarte-link-linux-x64.zip -o apliarte-link.zip &amp;&amp; unzip -o apliarte-link.zip &amp;&amp; chmod +x apliarte-link &amp;&amp; ./apliarte-link</code>
+              <code id="linux-all" data-release="linux">mkdir -p ~/Downloads &amp;&amp; cd ~/Downloads &amp;&amp; curl -L https://apliarte-link.web.app/downloads/apliarte-link-linux-app.zip -o apliarte-link-app.zip &amp;&amp; unzip -o apliarte-link-app.zip -d apliarte-link-app &amp;&amp; cd apliarte-link-app/bundle &amp;&amp; ./apliarte_link</code>
               <button class="copy-btn" onclick="copyCode('linux-all')">Copiar</button>
             </div>
           </div>
-          <p class="install-note">Requisito: acceso a /dev/uinput — <strong>sudo usermod -a -G input $USER</strong> y reiniciar sesión. En la primera ejecución concede los permisos que pida el sistema.</p>
+          <p class="install-note">Requisito: acceso a /dev/uinput — <strong>sudo usermod -a -G input $USER</strong> y reiniciar sesión. La app muestra los equipos conectados: haz clic para cambiar el control y configura tus comandos desde Ajustes.</p>
         </div>
 
       </div>
