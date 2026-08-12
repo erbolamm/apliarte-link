@@ -125,14 +125,44 @@
   window.copyCode = function (id) {
     const el = document.getElementById(id);
     if (!el) return;
-    navigator.clipboard.writeText(el.textContent.trim()).then(function () {
+    const text = el.textContent.trim();
+
+    // Función para mostrar feedback visual
+    function feedback() {
       const btn = el.parentElement.querySelector('.copy-btn');
       if (!btn) return;
       const prev = btn.textContent;
       btn.textContent = '✓';
       btn.classList.add('copied');
       setTimeout(function () { btn.textContent = prev; btn.classList.remove('copied'); }, 1500);
-    });
+    }
+
+    // Vía 1: Clipboard API (HTTPS)
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(feedback).catch(function () {
+        fallbackCopy(text, feedback);
+      });
+    } else {
+      // Vía 2: fallback con textarea + execCommand (funciona en más casos)
+      fallbackCopy(text, feedback);
+    }
   };
+
+  // Fallback: textarea oculto + execCommand('copy')
+  function fallbackCopy(text, onDone) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'absolute';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    ta.setSelectionRange(0, ta.value.length);
+    try {
+      document.execCommand('copy');
+    } catch (_) {}
+    document.body.removeChild(ta);
+    if (onDone) onDone();
+  }
 
 })();
