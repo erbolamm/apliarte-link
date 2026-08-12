@@ -103,7 +103,7 @@
       observer.observe(el);
     });
   }
-  // ===== Fetch latest release version =====
+  // ===== Badge de versión (sin tocar enlaces: los binarios viven en Firebase) =====
   (async function fetchLatestRelease() {
     try {
       const resp = await fetch('https://api.github.com/repos/erbolamm/apliarte-link/releases/latest');
@@ -111,20 +111,13 @@
       const release = await resp.json();
       const tag = release.tag_name || '';
 
-      // Update badge in hero
+      // Update badge in hero (no toca los enlaces de descarga: ya apuntan a Firebase)
       const badge = document.querySelector('.badge');
       if (badge && tag) {
-        badge.textContent = '🟢 ' + tag + ' — macOS + Windows';
+        badge.textContent = '🟢 ' + tag + ' — macOS + Windows + Linux';
       }
-
-      // Update download code blocks to use the specific tag (fallback from /latest/download/)
-      document.querySelectorAll('code[data-release]').forEach(function (code) {
-        if (tag) {
-          code.textContent = code.textContent.replace('/releases/latest/download/', '/releases/download/' + tag + '/');
-        }
-      });
     } catch (_) {
-      // GitHub API might be rate-limited; /latest/download/ still works as fallback
+      // GitHub API might be rate-limited; la web sigue funcionando igual
     }
   })();
 

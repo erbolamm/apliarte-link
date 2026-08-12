@@ -40,10 +40,10 @@ const I18N = {
     'promise.body': 'ApliArte Link es gratis. Mientras haya apoyo de la comunidad, seguirá siendo así. <strong>Si hay apoyo, no habrá publicidad ni suscripción.</strong> Es un compromiso, no una promesa de marketing.',
     'promise.cta': 'Cómo puedes apoyar',
 
-    'support.title': '💖 Apoya el proyecto',
-    'support.lead': 'Si esta herramienta te ahorra tiempo, un café ayuda a mantener el desarrollo. Cada aportación retrasa la necesidad de monetizar y mantiene la app gratuita.',
-    'support.redeem.title': '📝 Sobre el canje futuro',
-    'support.redeem.body': 'Si en el futuro la app pasa a tener planes de pago, los apoyantes actuales tendrán canje proporcional. Para que valga, en el comentario o asunto del pago menciona <strong>"ApliArte Link"</strong> y deja un email de contacto. Es de buena fe, sin letra pequeña.',
+    'support.title': '💖 Únete a los primeros',
+    'support.lead': 'Ya estás probando algo que la mayoría aún no conoce. Los primeros en creer en un proyecto son los que más reciben cuando despega. Si te sirve, un café hoy vale más que diez mañana.',
+    'support.redeem.title': '🎁 Lo que significa apoyar hoy',
+    'support.redeem.body': 'Quien apoya hoy no es un donante: es un early adopter. Cuando la app tenga planes Pro o Premium, los apoyantes tendrán <strong>descuento preferente</strong>. Y si algún día tuviera anuncios, <strong>los apoyantes no los verán</strong>. Solo menciona <strong>"ApliArte Link"</strong> en el pago y deja tu email. Sin letra pequeña, de buena fe.',
 
     'roadmap.title': '🗺️ Roadmap',
     'roadmap.lead': 'Fases 0-5 basadas en lecciones de deskflow (25.8k ⭐). Primero transporte confiable, después privacidad, después calidad de input.',
@@ -147,10 +147,10 @@ const I18N = {
     'promise.body': 'ApliArte Link is free. As long as there is community support, it will stay that way. <strong>If there is support, there will be no ads or subscription.</strong> A commitment, not a marketing promise.',
     'promise.cta': 'How you can support',
 
-    'support.title': '💖 Support the project',
-    'support.lead': 'If this tool saves you time, a coffee helps keep the project alive. Each contribution delays the need to monetize and keeps the app free.',
-    'support.redeem.title': '📝 About future redemption',
-    'support.redeem.body': 'If the app moves to paid plans in the future, current supporters will get proportional redemption. To make it count, mention <strong>"ApliArte Link"</strong> in the payment note and leave a contact email. Good faith, no fine print.',
+    'support.title': '💖 Join the first',
+    'support.lead': 'You are already testing something most people do not know yet. The first to believe in a project are the ones who get the most when it takes off. If it works for you, a coffee today is worth more than ten tomorrow.',
+    'support.redeem.title': '🎁 What supporting today means',
+    'support.redeem.body': 'Whoever supports today is not a donor: they are an early adopter. When the app gets Pro or Premium plans, supporters will get <strong>preferred discount</strong>. And if it ever had ads, <strong>supporters will not see them</strong>. Just mention <strong>"ApliArte Link"</strong> in the payment and leave your email. No fine print, good faith.',
 
     'roadmap.title': '🗺️ Roadmap',
     'roadmap.lead': 'First: a usable MVP for macOS and Windows with basic mouse and keyboard sharing. Everything else comes later.',
