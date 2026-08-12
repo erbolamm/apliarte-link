@@ -6,7 +6,7 @@ const I18N = {
     'nav.roadmap': 'Roadmap',
     'nav.support': 'Apoyar',
 
-    'hero.badge': '🟡 Foco actual — macOS + Windows',
+    'hero.badge': '🟢 Linux backend implementado — macOS + Windows + Linux',
     'hero.title': 'Un teclado. Un ratón. <span class="text-gradient">Todos tus ordenadores.</span>',
     'hero.lead': 'ApliArte Link es un KVM virtual por red local. Mueve el ratón al borde de la pantalla y salta al siguiente PC. Sin cables, sin dongles, sin hardware extra.',
     'hero.cta': 'Descargar gratis',
@@ -113,7 +113,7 @@ const I18N = {
     'nav.roadmap': 'Roadmap',
     'nav.support': 'Support',
 
-    'hero.badge': '🟡 Current focus — macOS + Windows',
+    'hero.badge': '🟢 Linux backend implemented — macOS + Windows + Linux',
     'hero.title': 'One keyboard. One mouse. <span class="text-gradient">All your computers.</span>',
     'hero.lead': 'ApliArte Link is a virtual KVM over your local network. Move your mouse to the screen edge and jump to the next PC. No cables, no dongles, no extra hardware.',
     'hero.cta': 'Download free',
