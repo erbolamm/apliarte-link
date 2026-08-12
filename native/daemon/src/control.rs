@@ -281,6 +281,18 @@ fn apply_transfer(
 
         let msg = ControlMessage::Assign { source_name };
         tokio::spawn(async move {
+            // Javier: Pieza que faltaba — antes de enviar el Assign hay que
+            // ESTABLECER la conexión saliente (connect es idempotente: si ya
+            // está en el pool, no hace nada). Sin esto, send() descartaba
+            // el frame silenciosamente y el control nunca llegaba al peer.
+            if let Err(error) = conn_mgr.connect(next_addr).await {
+                tracing::warn!(
+                    "⚠️ No se pudo conectar con {} para ceder el control: {}",
+                    next_addr,
+                    error
+                );
+                return;
+            }
             conn_mgr.send(next_addr, Frame::Control(msg)).await;
         });
     } else {

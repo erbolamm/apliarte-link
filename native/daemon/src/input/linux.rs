@@ -220,7 +220,7 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
 
-use evdev::raw_stream::RawDevice;
+use evdev::InputEvent as EvdevInputEvent;
 use evdev::InputEventKind;
 
 /// Listener global de captura para Linux.

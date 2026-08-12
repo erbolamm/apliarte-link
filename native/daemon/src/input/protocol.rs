@@ -60,14 +60,6 @@ pub enum Frame {
     KeepAlive(KeepAlive),
 }
 
-// Mantenemos NetworkPacket para compatibilidad con discovery (UDP+JSON)
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "packet_type", rename_all = "snake_case")]
-pub enum NetworkPacket {
-    Input { event: InputEvent },
-    Control { message: ControlMessage },
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ControlMessage {
     Assign { source_name: String },
