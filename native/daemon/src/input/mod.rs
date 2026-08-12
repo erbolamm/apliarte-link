@@ -33,6 +33,19 @@ use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
 use tokio::sync::mpsc::Receiver;
 
+/// ¿Tiene el proceso permiso de Accesibilidad (solo relevante en macOS)?
+/// En Linux/Windows siempre se considera concedido.
+pub fn accessibility_granted() -> bool {
+    #[cfg(target_os = "macos")]
+    {
+        macos::accessibility_granted()
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        true
+    }
+}
+
 /// Arranca el motor de input.
 pub async fn serve(
     mut event_rx: Receiver<(SocketAddr, Frame)>,

@@ -2,11 +2,13 @@ class PeerInfo {
   final String ip;
   final String name;
   final bool connected;
+  final bool allowed;
 
   const PeerInfo({
     required this.ip,
     required this.name,
     required this.connected,
+    this.allowed = true,
   });
 
   factory PeerInfo.fromJson(Map<String, dynamic> json) {
@@ -14,14 +16,16 @@ class PeerInfo {
       ip: json['ip'] as String? ?? '',
       name: json['name'] as String? ?? '',
       connected: json['connected'] as bool? ?? false,
+      allowed: json['allowed'] as bool? ?? true,
     );
   }
 
   Map<String, dynamic> toJson() => {
-    'ip': ip,
-    'name': name,
-    'connected': connected,
-  };
+        'ip': ip,
+        'name': name,
+        'connected': connected,
+        'allowed': allowed,
+      };
 }
 
 class PeripheralInfo {
@@ -152,6 +156,9 @@ class UiResponse {
   final bool? assignedHere;
   final String? controllerName;
   final TransferNotice? transferNotice;
+  final bool? visible;
+  final List<String>? allowedPeers;
+  final bool? macAccessibilityGranted;
 
   const UiResponse({
     required this.type,
@@ -165,6 +172,9 @@ class UiResponse {
     this.assignedHere,
     this.controllerName,
     this.transferNotice,
+    this.visible,
+    this.allowedPeers,
+    this.macAccessibilityGranted,
   });
 
   factory UiResponse.fromJson(Map<String, dynamic> json) {
@@ -201,6 +211,13 @@ class UiResponse {
               Map<String, dynamic>.from(transferNoticeJson),
             )
           : null,
+      visible: json['visible'] as bool?,
+      allowedPeers: json['allowed_peers'] is List
+          ? (json['allowed_peers'] as List)
+              .whereType<String>()
+              .toList()
+          : null,
+      macAccessibilityGranted: json['mac_accessibility_granted'] as bool?,
     );
   }
 }

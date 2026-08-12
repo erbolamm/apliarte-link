@@ -19,6 +19,8 @@
 //   - {"cmd": "remove_peer", "ip": "..."}→ elimina un PC
 //   - {"cmd": "update_config", ...}    → actualiza la configuración
 //   - {"cmd": "shutdown"}              → apaga el servicio
+//   - {"cmd": "set_visible", "visible": true} → compartir/ocultar este equipo
+//   - {"cmd": "set_peer_allowed", "ip": "...", "allowed": true} → registrar dispositivo
 
 use crate::config::AppConfig;
 use crate::control::{self, ControlState, TransferNotice};
@@ -44,6 +46,8 @@ pub enum UiCommand {
     CycleActivePeer,
     UpdateInputConfig { input: InputConfigPayload },
     UpdateConfig { config: serde_json::Value },
+    SetVisible { visible: bool },
+    SetPeerAllowed { ip: String, allowed: bool },
     Shutdown,
 }
 
@@ -62,6 +66,10 @@ pub enum UiResponse {
         assigned_here: bool,
         controller_name: Option<String>,
         transfer_notice: Option<TransferNotice>,
+        visible: bool,
+        allowed_peers: Vec<String>,
+        /// macOS: ¿tiene el proceso permiso de Accesibilidad? None en otros SO.
+        mac_accessibility_granted: Option<bool>,
     },
     Ok,
     Error {
@@ -98,6 +106,8 @@ pub struct PeerInfo {
     pub ip: String,
     pub name: String,
     pub connected: bool,
+    /// true si este peer está en nuestra allowlist (dispositivo registrado)
+    pub allowed: bool,
 }
 
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
@@ -212,7 +222,15 @@ fn handle_command(
         UiCommand::SetActivePeer { ip } => match resolve_peer_addr(&ip, data_port, peers) {
             Ok(addr) => {
                 add_peer(peers, addr, None);
-                control::set_active_peer(addr, peers, active_peer, control_state, conn_mgr);
+                let allowed = cfg.lock().unwrap().sharing.allowed_peers.clone();
+                control::set_active_peer(
+                    addr,
+                    peers,
+                    active_peer,
+                    control_state,
+                    conn_mgr,
+                    &allowed,
+                );
                 build_status(peers, active_peer, cfg, control_state)
             }
             Err(message) => UiResponse::Error { message },
@@ -222,7 +240,14 @@ fn handle_command(
             build_status(peers, active_peer, cfg, control_state)
         }
         UiCommand::CycleActivePeer => {
-            control::cycle_active_peer(peers, active_peer, control_state, conn_mgr);
+            let allowed = cfg.lock().unwrap().sharing.allowed_peers.clone();
+            control::cycle_active_peer(
+                peers,
+                active_peer,
+                control_state,
+                conn_mgr,
+                &allowed,
+            );
             build_status(peers, active_peer, cfg, control_state)
         }
         UiCommand::UpdateInputConfig { input } => {
@@ -249,6 +274,58 @@ fn handle_command(
             }
         }
         UiCommand::UpdateConfig { config: _ } => UiResponse::Ok,
+        UiCommand::SetVisible { visible } => {
+            let updated_cfg = {
+                let mut current_cfg = cfg.lock().unwrap();
+                current_cfg.sharing.visible = visible;
+                current_cfg.clone()
+            };
+
+            match crate::config::save(&updated_cfg) {
+                Ok(()) => {
+                    tracing::info!(
+                        "👁️  Visibilidad del equipo cambiada: visible={}",
+                        visible
+                    );
+                    build_status(peers, active_peer, cfg, control_state)
+                }
+                Err(error) => UiResponse::Error {
+                    message: format!("No se pudo guardar la configuración: {}", error),
+                },
+            }
+        }
+        UiCommand::SetPeerAllowed { ip, allowed } => {
+            let updated_cfg = {
+                let mut current_cfg = cfg.lock().unwrap();
+                if allowed {
+                    if !current_cfg
+                        .sharing
+                        .allowed_peers
+                        .iter()
+                        .any(|entry| entry == &ip)
+                    {
+                        current_cfg.sharing.allowed_peers.push(ip.clone());
+                    }
+                } else {
+                    current_cfg.sharing.allowed_peers.retain(|entry| entry != &ip);
+                }
+                current_cfg.clone()
+            };
+
+            match crate::config::save(&updated_cfg) {
+                Ok(()) => {
+                    tracing::info!(
+                        "🔐 Registro de dispositivo {}: allowed={}",
+                        ip,
+                        allowed
+                    );
+                    build_status(peers, active_peer, cfg, control_state)
+                }
+                Err(error) => UiResponse::Error {
+                    message: format!("No se pudo guardar la configuración: {}", error),
+                },
+            }
+        }
         UiCommand::Shutdown => UiResponse::Ok,
     }
 }
@@ -259,7 +336,8 @@ fn build_status(
     cfg: &Arc<Mutex<AppConfig>>,
     control_state: &ControlState,
 ) -> UiResponse {
-    let peer_infos = build_peer_infos(peers);
+    let current_cfg = cfg.lock().unwrap();
+    let peer_infos = build_peer_infos(peers, &current_cfg.sharing.allowed_peers);
     let peripherals = match devices::list_input_peripherals() {
         Ok(peripherals) => peripherals,
         Err(error) => {
@@ -268,8 +346,11 @@ fn build_status(
         }
     };
     let current_active = active_peer.lock().unwrap();
-    let current_cfg = cfg.lock().unwrap();
     let control_snapshot = control_state.lock().unwrap().clone();
+    #[cfg(target_os = "macos")]
+    let mac_accessibility_granted = Some(crate::input::accessibility_granted());
+    #[cfg(not(target_os = "macos"))]
+    let mac_accessibility_granted = None;
     UiResponse::Status {
         running: true,
         active_peer: current_active.as_ref().map(|addr| addr.ip().to_string()),
@@ -280,17 +361,24 @@ fn build_status(
         assigned_here: control_snapshot.assigned_here,
         controller_name: control_snapshot.controller_name,
         transfer_notice: control_snapshot.transfer_notice,
+        visible: current_cfg.sharing.visible,
+        allowed_peers: current_cfg.sharing.allowed_peers.clone(),
+        mac_accessibility_granted,
     }
 }
 
-fn build_peer_infos(peers: &PeerList) -> Vec<PeerInfo> {
+fn build_peer_infos(peers: &PeerList, allowed_peers: &[String]) -> Vec<PeerInfo> {
     let list = peers.lock().unwrap();
     let now = Instant::now();
     list.iter()
-        .map(|peer| PeerInfo {
-            ip: peer.addr.ip().to_string(),
-            name: peer.name.clone(),
-            connected: peer.is_connected(now),
+        .map(|peer| {
+            let ip = peer.addr.ip().to_string();
+            PeerInfo {
+                allowed: allowed_peers.is_empty() || allowed_peers.contains(&ip),
+                ip,
+                name: peer.name.clone(),
+                connected: peer.is_connected(now),
+            }
         })
         .collect()
 }
@@ -358,7 +446,7 @@ mod tests {
             PeerEntry::manual(manual, Some("Windows".to_string())),
         ]));
 
-        let infos = build_peer_infos(&peers);
+        let infos = build_peer_infos(&peers, &[]);
 
         assert!(infos
             .iter()

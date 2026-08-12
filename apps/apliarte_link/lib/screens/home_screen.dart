@@ -375,8 +375,11 @@ class HomeScreen extends StatelessWidget {
     final appState = context.read<AppState>();
     final armed = appState.inputConfig.armed;
     final active = armed && appState.activePeer == peer.ip;
+    final allowed = peer.allowed;
     final subtitle = !peer.connected
         ? 'Desconectado'
+        : !allowed
+        ? 'No autorizado · toca para permitir'
         : armed
         ? 'En red · toca para conectar'
         : 'En red · activa el control para conectar';
@@ -395,7 +398,7 @@ class HomeScreen extends StatelessWidget {
               ),
               title: Row(
                 children: [
-                  const Icon(Icons.computer, color: Colors.white70),
+                  Icon(Icons.computer, color: Colors.white70),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
@@ -405,11 +408,50 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              content: Text(
-                armed
-                    ? 'IP: ${peer.ip}\n\n¿Enviar el teclado y ratón a este ordenador?'
-                    : 'IP: ${peer.ip}\n\nEl control global está inactivo. ¿Activarlo y enviar el teclado y ratón a este ordenador?',
-                style: const TextStyle(color: Colors.white70),
+              content: StatefulBuilder(
+                builder: (dialogContext, setDialogState) {
+                  var localAllowed = allowed;
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'IP: ${peer.ip}',
+                        style: const TextStyle(color: Colors.white70),
+                      ),
+                      const SizedBox(height: 16),
+                      // Javier: "Dispositivos registrados" — toggle por peer
+                      SwitchListTile.adaptive(
+                        contentPadding: EdgeInsets.zero,
+                        value: localAllowed,
+                        activeColor: Theme.of(context).colorScheme.primary,
+                        title: const Text(
+                          'Permitir compartir con este equipo',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                        subtitle: const Text(
+                          'Solo los equipos permitidos pueden recibir tu teclado y ratón.',
+                          style: TextStyle(color: Colors.white54),
+                        ),
+                        onChanged: (value) {
+                          setDialogState(() {
+                            localAllowed = value;
+                          });
+                          appState.setPeerAllowed(peer.ip, value);
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        armed && localAllowed
+                            ? '¿Enviar el teclado y ratón a este ordenador?'
+                            : !localAllowed
+                            ? 'Permite este equipo para poder enviarle el teclado y ratón.'
+                            : 'El control global está inactivo. ¿Activarlo y enviar el teclado y ratón a este ordenador?',
+                        style: const TextStyle(color: Colors.white70),
+                      ),
+                    ],
+                  );
+                },
               ),
               actions: [
                 TextButton(
@@ -425,23 +467,25 @@ class HomeScreen extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF005FA9),
                   ),
-                  onPressed: () {
-                    if (!armed) {
-                      appState.updateInputConfig(
-                        appState.inputConfig.copyWith(armed: true),
-                      );
-                    }
-                    appState.connectPeer(peer.ip);
-                    Navigator.of(ctx).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          '${armed ? 'Controlando' : 'Control global activado y controlando'} ${peer.name.isEmpty ? peer.ip : peer.name}',
-                        ),
-                        duration: const Duration(seconds: 2),
-                      ),
-                    );
-                  },
+                  onPressed: allowed
+                      ? () {
+                          if (!armed) {
+                            appState.updateInputConfig(
+                              appState.inputConfig.copyWith(armed: true),
+                            );
+                          }
+                          appState.connectPeer(peer.ip);
+                          Navigator.of(ctx).pop();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                '${armed ? 'Controlando' : 'Control global activado y controlando'} ${peer.name.isEmpty ? peer.ip : peer.name}',
+                              ),
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        }
+                      : null,
                 ),
               ],
             ),
@@ -451,20 +495,44 @@ class HomeScreen extends StatelessWidget {
           isActive: active,
           title: peer.name.isEmpty ? peer.ip : peer.name,
           subtitle: subtitle,
-          icon: Icons.computer,
+          icon: allowed ? Icons.computer : Icons.lock_outline,
         ),
       ),
     );
   }
 
-  /// Javier: Para añadir nuevos PCs a manija si el mDNS falla
+  /// Javier: Para añadir nuevos PCs a mano si el mDNS falla
   Widget _buildAddPeerCard(BuildContext context) {
+    final appState = context.read<AppState>();
     return Material(
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(24),
         onTap: () {
-          // Mostrar modal para añadir IP manual
+          // Javier: Modal para añadir IP manual — ahora sí funcional
+          showDialog<void>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              backgroundColor: const Color(0xFF1a2d40),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: const Text(
+                'Añadir equipo manualmente',
+                style: TextStyle(color: Colors.white),
+              ),
+              content: const _AddPeerForm(),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text(
+                    'Cancelar',
+                    style: TextStyle(color: Colors.white54),
+                  ),
+                ),
+              ],
+            ),
+          );
         },
         child: Container(
           width: 200,
@@ -487,6 +555,105 @@ class HomeScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// Javier: Formulario para añadir un equipo por IP (con nombre opcional).
+  /// Al añadirlo, también lo registramos en la allowlist automáticamente.
+  class _AddPeerForm extends StatefulWidget {
+    const _AddPeerForm();
+
+    @override
+    State<_AddPeerForm> createState() => _AddPeerFormState();
+  }
+
+  class _AddPeerFormState extends State<_AddPeerForm> {
+    final _ipController = TextEditingController();
+    final _nameController = TextEditingController();
+    String? _error;
+
+    @override
+    void dispose() {
+      _ipController.dispose();
+      _nameController.dispose();
+      super.dispose();
+    }
+
+    void _submit() {
+      final ip = _ipController.text.trim();
+      if (ip.isEmpty) {
+        setState(() {
+          _error = 'Escribe la IP del equipo (ej: 192.168.1.20)';
+        });
+        return;
+      }
+
+      final name = _nameController.text.trim();
+      final appState = context.read<AppState>();
+      appState.addPeer(ip, name);
+      // Javier: "Dispositivos registrados" — al añadir manualmente,
+      // lo autorizamos para compartir.
+      appState.setPeerAllowed(ip, true);
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Equipo ${name.isEmpty ? ip : name} añadido y permitido'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+
+    @override
+    Widget build(BuildContext context) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _ipController,
+            style: const TextStyle(color: Colors.white),
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              labelText: 'IP del equipo',
+              labelStyle: const TextStyle(color: Colors.white54),
+              hintText: '192.168.1.20',
+              hintStyle: const TextStyle(color: Colors.white24),
+              enabledBorder: const UnderlineInputBorder(
+                borderSide: BorderSide(color: Colors.white24),
+              ),
+              focusedBorder: const UnderlineInputBorder(
+                borderSide: BorderSide(color: Color(0xFF5ECEF5)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _nameController,
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              labelText: 'Nombre (opcional)',
+              labelStyle: const TextStyle(color: Colors.white54),
+              hintText: 'Mac mini de la cocina',
+              hintStyle: const TextStyle(color: Colors.white24),
+              enabledBorder: const UnderlineInputBorder(
+                borderSide: BorderSide(color: Colors.white24),
+              ),
+              focusedBorder: const UnderlineInputBorder(
+                borderSide: BorderSide(color: Color(0xFF5ECEF5)),
+              ),
+            ),
+          ),
+          if (_error != null) ...[const SizedBox(height: 12), Text(_error!, style: const TextStyle(color: Color(0xFFE8955E)))],
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              icon: const Icon(Icons.add),
+              label: const Text('Añadir equipo'),
+              onPressed: _submit,
+            ),
+          ),
+        ],
+      );
+    }
   }
 
   Future<void> _showSettingsDialog(
@@ -513,6 +680,28 @@ class HomeScreen extends StatelessWidget {
                 width: 440,
                 child: Wrap(
                   children: [
+                    // Javier: "Dispositivos registrados" — este equipo se anuncia
+                    // en la red o queda oculto (invisible para otros).
+                    SwitchListTile.adaptive(
+                      contentPadding: EdgeInsets.zero,
+                      value: appState.visible,
+                      activeColor: Theme.of(context).colorScheme.primary,
+                      title: const Text(
+                        'Este equipo es visible',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      subtitle: const Text(
+                        'Si está inactivo, los demás no te ven en la red ni pueden conectarse a ti.',
+                        style: TextStyle(color: Colors.white54),
+                      ),
+                      onChanged: (value) {
+                        appState.setVisible(value);
+                      },
+                    ),
+                    const Divider(
+                      color: Colors.white12,
+                      height: 24,
+                    ),
                     SwitchListTile.adaptive(
                       contentPadding: EdgeInsets.zero,
                       value: draft.armed,

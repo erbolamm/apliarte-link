@@ -48,9 +48,8 @@ async fn main() -> Result<()> {
 
     let local_name = control::detect_local_name();
     let control_state: ControlState = Arc::new(Mutex::new(ControlStatus::new(local_name)));
-    let network_cfg = cfg.lock().unwrap().clone();
     let (peers, conn_mgr) =
-        network::start(event_tx.clone(), network_cfg, control_state.clone()).await?;
+        network::start(event_tx.clone(), cfg.clone(), control_state.clone()).await?;
     let active_peer: Arc<Mutex<Option<SocketAddr>>> = Arc::new(Mutex::new(None));
 
     tokio::select! {

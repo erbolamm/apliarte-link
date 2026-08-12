@@ -134,9 +134,10 @@ pub fn cycle_active_peer(
     active_peer: &Arc<Mutex<Option<SocketAddr>>>,
     control_state: &ControlState,
     conn_mgr: &ConnectionManager,
+    allowed: &[String],
 ) -> bool {
     let previous = current_active_peer(active_peer);
-    let next = next_connected_peer(peers, previous);
+    let next = next_connected_peer(peers, previous, allowed);
 
     if previous == next {
         return false;
@@ -153,7 +154,18 @@ pub fn set_active_peer(
     active_peer: &Arc<Mutex<Option<SocketAddr>>>,
     control_state: &ControlState,
     conn_mgr: &ConnectionManager,
+    allowed: &[String],
 ) -> bool {
+    // Javier: "Dispositivos registrados" — si la allowlist no está vacía
+    // y este peer no está en ella, no podemos tomar su control.
+    if !is_addr_allowed(&next, allowed) {
+        tracing::warn!(
+            "🚫 No se puede conectar a {} — no está en la allowlist",
+            next
+        );
+        return false;
+    }
+
     let previous = current_active_peer(active_peer);
     if previous == Some(next) {
         return false;
@@ -198,12 +210,17 @@ pub async fn send_input_to_active_peer(
     true
 }
 
-fn next_connected_peer(peers: &PeerList, current: Option<SocketAddr>) -> Option<SocketAddr> {
+fn next_connected_peer(
+    peers: &PeerList,
+    current: Option<SocketAddr>,
+    allowed: &[String],
+) -> Option<SocketAddr> {
     let now = Instant::now();
     let candidates = {
         let list = peers.lock().unwrap();
         list.iter()
             .filter(|peer| peer.is_connected(now))
+            .filter(|peer| is_addr_allowed(&peer.addr, allowed))
             .map(|peer| peer.addr)
             .collect::<Vec<_>>()
     };
@@ -219,6 +236,15 @@ fn next_connected_peer(peers: &PeerList, current: Option<SocketAddr>) -> Option<
             _ => None,
         },
     }
+}
+
+/// Javier: ¿Está esta IP en la lista de permitidos?
+/// Allowlist vacía = todos permitidos (modo actual).
+pub fn is_addr_allowed(addr: &SocketAddr, allowed: &[String]) -> bool {
+    if allowed.is_empty() {
+        return true;
+    }
+    allowed.iter().any(|ip| ip == &addr.ip().to_string())
 }
 
 fn set_active_peer_value(active_peer: &Arc<Mutex<Option<SocketAddr>>>, value: Option<SocketAddr>) {

@@ -269,10 +269,12 @@ pub fn start_switch_listener(
                     if let Ok(events) = device.fetch_events() {
                         for ev in events {
                             let input_cfg = cfg.lock().unwrap().input.clone();
+                            let allowed = cfg.lock().unwrap().sharing.allowed_peers.clone();
                             handle_evdev_event(
                                 &ev,
                                 &mut detector,
                                 &input_cfg,
+                                &allowed,
                                 &peers,
                                 &active_peer,
                                 &control_state,
@@ -297,6 +299,7 @@ fn handle_evdev_event(
     ev: &evdev::InputEvent,
     detector: &mut CommandDetector,
     input_cfg: &crate::config::InputConfig,
+    allowed: &[String],
     peers: &PeerList,
     active_peer: &Arc<Mutex<Option<SocketAddr>>>,
     control_state: &ControlState,
@@ -322,7 +325,7 @@ fn handle_evdev_event(
     };
 
     if should_cycle {
-        control::cycle_active_peer(peers, active_peer, control_state, conn_mgr);
+        control::cycle_active_peer(peers, active_peer, control_state, conn_mgr, allowed);
         return;
     }
 

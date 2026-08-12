@@ -17,6 +17,7 @@ use crate::control::ControlState;
 use crate::input::protocol::Frame;
 use anyhow::Result;
 use std::net::SocketAddr;
+use std::sync::{Arc, Mutex};
 use tokio::net::TcpListener;
 use tokio::sync::mpsc::Sender;
 
@@ -24,19 +25,23 @@ use tokio::sync::mpsc::Sender;
 /// Returns the peer list and connection manager for other modules to use.
 pub async fn start(
     event_tx: Sender<(SocketAddr, Frame)>,
-    cfg: AppConfig,
+    cfg: Arc<Mutex<AppConfig>>,
     control_state: ControlState,
 ) -> Result<(PeerList, ConnectionManager)> {
     let local_name = control_state.lock().unwrap().local_name.clone();
+    let (data_port, visible) = {
+        let guard = cfg.lock().unwrap();
+        (guard.network.port, guard.sharing.visible)
+    };
 
-    // Discovery (UDP 4244) — unchanged
-    let peers = discovery::start(cfg.network.port, local_name.clone()).await?;
+    // Discovery (UDP 4244) — visible=false → no nos anunciamos
+    let peers = discovery::start(data_port, local_name.clone(), visible).await?;
 
     // Transport (TCP 4242)
-    let listener = TcpListener::bind(format!("0.0.0.0:{}", cfg.network.port)).await?;
-    tracing::info!("📡 Servidor TCP escuchando en 0.0.0.0:{}", cfg.network.port);
+    let listener = TcpListener::bind(format!("0.0.0.0:{}", data_port)).await?;
+    tracing::info!("📡 Servidor TCP escuchando en 0.0.0.0:{}", data_port);
 
-    let conn_mgr = transport::ConnectionPool::new(local_name, event_tx)?;
+    let conn_mgr = transport::ConnectionPool::new(local_name, event_tx, cfg.clone())?;
 
     // Spawn accept loop
     let accept_mgr = conn_mgr.clone();

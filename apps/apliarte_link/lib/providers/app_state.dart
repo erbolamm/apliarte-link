@@ -14,6 +14,9 @@ class AppState extends ChangeNotifier {
 
   bool _isEngineConnected = false;
   bool _isRunning = false;
+  bool _visible = true;
+  List<String> _allowedPeers = [];
+  bool? _macAccessibilityGranted;
   String? _activePeer;
   List<PeerInfo> _peers = [];
   List<PeripheralInfo> _peripherals = [];
@@ -30,6 +33,9 @@ class AppState extends ChangeNotifier {
 
   bool get isEngineConnected => _isEngineConnected;
   bool get isRunning => _isRunning;
+  bool get visible => _visible;
+  List<String> get allowedPeers => _allowedPeers;
+  bool? get macAccessibilityGranted => _macAccessibilityGranted;
   String? get activePeer => _activePeer;
   List<PeerInfo> get peers => _peers;
   List<PeripheralInfo> get peripherals => _peripherals;
@@ -55,6 +61,15 @@ class AppState extends ChangeNotifier {
         }
         if (response.localName != null && response.localName!.isNotEmpty) {
           _localName = response.localName!;
+        }
+        if (response.visible != null) {
+          _visible = response.visible!;
+        }
+        if (response.allowedPeers != null) {
+          _allowedPeers = response.allowedPeers!;
+        }
+        if (response.macAccessibilityGranted != null) {
+          _macAccessibilityGranted = response.macAccessibilityGranted;
         }
         _assignedHere = response.assignedHere ?? false;
         _controllerName = response.controllerName;
@@ -99,6 +114,28 @@ class AppState extends ChangeNotifier {
   /// Añadir un nuevo PC a nuestro ApliArte Link
   void addPeer(String ip, String name) {
     _ipcService.sendCommand({'cmd': 'add_peer', 'ip': ip, 'name': name});
+  }
+
+  /// Javier: "Dispositivos registrados" — este equipo se anuncia en la red
+  /// (visible) o queda oculto (invisible).
+  void setVisible(bool value) {
+    _visible = value;
+    notifyListeners();
+    _ipcService.sendCommand({'cmd': 'set_visible', 'visible': value});
+  }
+
+  /// Javier: Registrar (o desregistrar) un dispositivo en nuestra allowlist.
+  /// Solo los peers permitidos aparecen como "compartibles" y pueden conectarse.
+  void setPeerAllowed(String ip, bool allowed) {
+    if (allowed) {
+      if (!_allowedPeers.contains(ip)) {
+        _allowedPeers = [..._allowedPeers, ip];
+      }
+    } else {
+      _allowedPeers = _allowedPeers.where((entry) => entry != ip).toList();
+    }
+    notifyListeners();
+    _ipcService.sendCommand({'cmd': 'set_peer_allowed', 'ip': ip, 'allowed': allowed});
   }
 
   /// Conectar (activar el control) a un peer — lo marca como activo localmente

@@ -228,11 +228,19 @@ pub fn start_switch_listener(
                                     .unwrap()
                                     .register_keyboard_match(matched)
                                 {
+                                    let allowed = context
+                                        .cfg
+                                        .lock()
+                                        .unwrap()
+                                        .sharing
+                                        .allowed_peers
+                                        .clone();
                                     control::cycle_active_peer(
                                         &context.peers,
                                         &context.active_peer,
                                         &context.control_state,
                                         &context.conn_mgr,
+                                        &allowed,
                                     );
                                     return LRESULT(1);
                                 }
@@ -305,11 +313,19 @@ pub fn start_switch_listener(
                         };
 
                         if should_cycle {
+                            let allowed = context
+                                .cfg
+                                .lock()
+                                .unwrap()
+                                .sharing
+                                .allowed_peers
+                                .clone();
                             control::cycle_active_peer(
                                 &context.peers,
                                 &context.active_peer,
                                 &context.control_state,
                                 &context.conn_mgr,
+                                &allowed,
                             );
                             return LRESULT(1);
                         }

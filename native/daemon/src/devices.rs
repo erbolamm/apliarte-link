@@ -143,10 +143,138 @@ mod imp {
 #[cfg(target_os = "linux")]
 mod imp {
     use super::*;
+    use std::collections::HashSet;
 
+    /// Inventario HID real en Linux sin libudev:
+    /// parseamos /proc/bus/input/devices (formato texto del kernel).
+    /// Bloque típico:
+    ///   I: Bus=0003 Vendor=046d Product=c52b Version=0111
+    ///   N: Name="Logitech USB Receiver"
+    ///   H: Handlers=kbd mouse0 event3 js0
     pub fn list_input_peripherals() -> Result<Vec<PeripheralInfo>> {
-        // Linux HID scanning requires libudev; return empty for now
-        Ok(Vec::new())
+        let content = std::fs::read_to_string("/proc/bus/input/devices")?;
+        let mut peripherals = Vec::new();
+        let mut seen = HashSet::new();
+
+        let mut bus: Option<String> = None;
+        let mut vendor: u16 = 0;
+        let mut product: u16 = 0;
+        let mut name = String::new();
+        let mut handlers = String::new();
+
+        for line in content.lines() {
+            let line = line.trim();
+            if line.is_empty() {
+                // Fin de bloque: clasificar y guardar
+                if let Some(kind) = classify_handlers(&handlers) {
+                    let id = format!(
+                        "{}-{:04x}-{:04x}-{}",
+                        kind,
+                        vendor,
+                        product,
+                        name.trim().to_lowercase()
+                    );
+                    if seen.insert(id.clone()) {
+                        peripherals.push(PeripheralInfo {
+                            id,
+                            name: if name.trim().is_empty() {
+                                format!("{:04x}:{:04x}", vendor, product)
+                            } else {
+                                name.trim().to_string()
+                            },
+                            kind,
+                            bus: bus.clone().unwrap_or_else(|| "unknown".to_string()),
+                            connected: true,
+                            vendor_id: vendor,
+                            product_id: product,
+                        });
+                    }
+                }
+                bus = None;
+                vendor = 0;
+                product = 0;
+                name.clear();
+                handlers.clear();
+                continue;
+            }
+
+            if let Some(rest) = line.strip_prefix("I:") {
+                bus = parse_bus(rest);
+                vendor = parse_hex_field(rest, "Vendor");
+                product = parse_hex_field(rest, "Product");
+            } else if let Some(rest) = line.strip_prefix("N:") {
+                name = rest.trim().trim_matches('"').to_string();
+            } else if let Some(rest) = line.strip_prefix("H:") {
+                handlers = rest.to_string();
+            }
+        }
+
+        // Último bloque sin línea vacía final
+        if let Some(kind) = classify_handlers(&handlers) {
+            let id = format!(
+                "{}-{:04x}-{:04x}-{}",
+                kind,
+                vendor,
+                product,
+                name.trim().to_lowercase()
+            );
+            if seen.insert(id.clone()) {
+                peripherals.push(PeripheralInfo {
+                    id,
+                    name: if name.trim().is_empty() {
+                        format!("{:04x}:{:04x}", vendor, product)
+                    } else {
+                        name.trim().to_string()
+                    },
+                    kind,
+                    bus: bus.clone().unwrap_or_else(|| "unknown".to_string()),
+                    connected: true,
+                    vendor_id: vendor,
+                    product_id: product,
+                });
+            }
+        }
+
+        peripherals.sort_by(|left, right| {
+            left.kind
+                .cmp(&right.kind)
+                .then_with(|| left.name.to_lowercase().cmp(&right.name.to_lowercase()))
+        });
+
+        Ok(peripherals)
+    }
+
+    fn classify_handlers(handlers: &str) -> Option<String> {
+        let lower = handlers.to_lowercase();
+        if lower.contains("kbd") {
+            Some("keyboard".to_string())
+        } else if lower.contains("mouse") {
+            Some("mouse".to_string())
+        } else {
+            None
+        }
+    }
+
+    fn parse_bus(line: &str) -> Option<String> {
+        let bus_hex = parse_hex_field(line, "Bus");
+        match bus_hex {
+            0x0003 => Some("usb".to_string()),
+            0x0005 => Some("bluetooth".to_string()),
+            0x0011 => Some("ps2".to_string()),
+            0x0006 => Some("serio".to_string()),
+            other => Some(format!("bus{:04x}", other)),
+        }
+    }
+
+    fn parse_hex_field(line: &str, field: &str) -> u16 {
+        line.split_whitespace()
+            .find_map(|token| {
+                let token = token.trim_end_matches('=');
+                token
+                    .strip_prefix(field)
+                    .and_then(|value| u16::from_str_radix(value.trim_start_matches('='), 16).ok())
+            })
+            .unwrap_or(0)
     }
 }
 

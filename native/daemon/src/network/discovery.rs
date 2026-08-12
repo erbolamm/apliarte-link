@@ -96,13 +96,17 @@ impl PeerEntry {
 
 /// Arranca el servicio de descubrimiento.
 /// Devuelve la lista de peers para que otros módulos la consulten.
-pub async fn start(data_port: u16, local_name: String) -> Result<PeerList> {
+/// `visible=false` → este equipo no se anuncia (no responde HELLOs),
+/// pero sigue viendo a los demás.
+pub async fn start(data_port: u16, local_name: String, visible: bool) -> Result<PeerList> {
     let peers: PeerList = Arc::new(Mutex::new(Vec::new()));
     let peers_clone = peers.clone();
     let local_instance_id = build_instance_id();
 
     tokio::spawn(async move {
-        if let Err(e) = run_discovery(data_port, local_name, local_instance_id, peers_clone).await {
+        if let Err(e) = run_discovery(data_port, local_name, local_instance_id, peers_clone, visible)
+            .await
+        {
             tracing::error!("Error en descubrimiento: {}", e);
         }
     });
@@ -115,6 +119,7 @@ async fn run_discovery(
     local_name: String,
     local_instance_id: String,
     peers: PeerList,
+    visible: bool,
 ) -> Result<()> {
     // Abrimos socket en el puerto de discovery con SO_REUSEADDR para que
     // múltiples instancias en el mismo PC no colisionen
@@ -152,6 +157,7 @@ async fn run_discovery(
                         &local_name_recv,
                         &local_instance_id_recv,
                         &peers_recv,
+                        visible,
                     )
                     .await;
                 }
@@ -190,6 +196,7 @@ async fn handle_message(
     local_name: &str,
     local_instance_id: &str,
     peers: &PeerList,
+    visible: bool,
 ) {
     let msg: DiscoveryMsg = match serde_json::from_slice(data) {
         Ok(m) => m,
@@ -214,6 +221,12 @@ async fn handle_message(
             // Guardar el peer con su puerto de datos real
             let peer_addr = SocketAddr::new(from.ip(), port);
             add_peer(peers, peer_addr, Some(name.clone()));
+
+            // Si este equipo es invisible, no respondemos: el otro no nos ve
+            if !visible {
+                tracing::debug!("🙈 Equipo invisible — no respondemos HELLO de {}", from.ip());
+                return;
+            }
 
             // Responder directamente a quien preguntó
             let reply = DiscoveryMsg::HelloReply {

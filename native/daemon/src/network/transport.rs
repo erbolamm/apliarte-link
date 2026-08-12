@@ -15,6 +15,7 @@
 //
 // Framing: 4-byte BE length prefix + MessagePack payload.
 
+use crate::config::AppConfig;
 use crate::input::protocol::Frame;
 use anyhow::{Context, Result};
 use rcgen::{CertificateParams, DistinguishedName, KeyPair, PKCS_ECDSA_P256_SHA256};
@@ -23,7 +24,7 @@ use rustls::ServerConfig;
 use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
@@ -58,6 +59,8 @@ pub struct ConnectionPool {
     keepalive_interval: Duration,
     /// Keep-alive timeout (after this many missed pings, connection is dead).
     keepalive_timeout: Duration,
+    /// Shared config (allowlist para "dispositivos registrados").
+    cfg: Arc<Mutex<AppConfig>>,
 }
 
 // ---------------------------------------------------------------------------
@@ -69,6 +72,7 @@ impl ConnectionPool {
     pub fn new(
         local_name: String,
         inbound_tx: tokio::sync::mpsc::Sender<(SocketAddr, Frame)>,
+        cfg: Arc<Mutex<AppConfig>>,
     ) -> Result<ConnectionManager> {
         let (tls_acceptor, tls_connector) = build_tls_config()?;
 
@@ -81,6 +85,7 @@ impl ConnectionPool {
             tls_connector,
             keepalive_interval: Duration::from_secs(3),
             keepalive_timeout: Duration::from_secs(9),
+            cfg,
         }))
     }
 
@@ -89,6 +94,14 @@ impl ConnectionPool {
         loop {
             match listener.accept().await {
                 Ok((stream, addr)) => {
+                    if !self.is_addr_allowed(&addr) {
+                        tracing::warn!(
+                            "🚫 Conexión rechazada de {} — no está en la allowlist",
+                            addr
+                        );
+                        drop(stream);
+                        continue;
+                    }
                     tracing::info!("🔌 Conexión TCP entrante de {}", addr);
                     let mgr = self.clone();
                     tokio::spawn(async move {
@@ -102,6 +115,16 @@ impl ConnectionPool {
                 }
             }
         }
+    }
+
+    /// Comprueba si una IP entrante está autorizada según la allowlist.
+    /// Allowlist vacía = permitir a cualquiera (modo actual).
+    pub fn is_addr_allowed(self: &ConnectionManager, addr: &SocketAddr) -> bool {
+        let allowed = self.cfg.lock().unwrap().sharing.allowed_peers.clone();
+        if allowed.is_empty() {
+            return true;
+        }
+        allowed.iter().any(|ip| ip == &addr.ip().to_string())
     }
 
     /// Connect to a peer and add it to the pool. Idempotent.
@@ -479,7 +502,8 @@ mod tests {
     async fn connection_pool_connect_and_send() {
         let _ = rustls::crypto::ring::default_provider().install_default();
         let (tx, _rx) = tokio::sync::mpsc::channel::<(SocketAddr, Frame)>(16);
-        let mgr = ConnectionPool::new("test-daemon".into(), tx).unwrap();
+        let cfg = Arc::new(Mutex::new(crate::config::AppConfig::default()));
+        let mgr = ConnectionPool::new("test-daemon".into(), tx, cfg).unwrap();
 
         // Verify initial state
         let addr: SocketAddr = "192.168.1.1:4242".parse().unwrap();

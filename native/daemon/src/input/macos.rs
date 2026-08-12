@@ -28,6 +28,20 @@ fn last_mouse_pos() -> &'static Mutex<Option<(f64, f64)>> {
 /// Inyecta un evento de input en macOS
 /// Javier: "inyectar" = decirle a macOS que el ratón/teclado hizo algo,
 /// aunque físicamente no se haya movido nada
+// Javier: Comprueba si este proceso tiene permiso de Accesibilidad en macOS.
+// CGEventTap y CGEvent post lo exigen (Ajustes → Privacidad → Accesibilidad).
+// Sin él, capturar e inyectar falla en silencio — por eso lo exponemos a la UI.
+#[link(name = "ApplicationServices", kind = "framework")]
+extern "C" {
+    fn AXIsProcessTrusted() -> bool;
+}
+
+pub fn accessibility_granted() -> bool {
+    // SAFETY: AXIsProcessTrusted es una llamada C sin argumentos ni estado
+    // que devuelve un bool; no requiere contexto.
+    unsafe { AXIsProcessTrusted() }
+}
+
 pub async fn inject(event: InputEvent) -> Result<()> {
     // Javier: tokio::task::spawn_blocking es para código que bloquea el hilo
     // (las APIs de C de Apple no son async). Es como usar compute() en Flutter.
@@ -171,6 +185,14 @@ pub fn start_switch_listener(
                 CGEventType, EventField,
             };
 
+            // Javier: Si no hay permiso de Accesibilidad, avisamos alto y claro
+            // en vez de fallar en silencio (la UI mostrará un banner).
+            if !accessibility_granted() {
+                tracing::error!(
+                    "🔒 macOS: sin permiso de Accesibilidad. Actívalo en Ajustes → Privacidad → Accesibilidad para poder capturar e inyectar teclado/ratón."
+                );
+            }
+
             let detector = Arc::new(Mutex::new(CommandDetector::default()));
             let callback_detector = detector.clone();
             let callback_cfg = cfg.clone();
@@ -201,6 +223,7 @@ pub fn start_switch_listener(
                 ],
                 move |_proxy, event_type, event| {
                     let input_cfg = callback_cfg.lock().unwrap().input.clone();
+                    let allowed = callback_cfg.lock().unwrap().sharing.allowed_peers.clone();
 
                     if !input_cfg.armed {
                         callback_detector.lock().unwrap().reset();
@@ -261,6 +284,7 @@ pub fn start_switch_listener(
                             &callback_active_peer,
                             &callback_control_state,
                             &callback_conn_mgr,
+                            &allowed,
                         );
                         None
                     } else if control::current_active_peer(&callback_active_peer).is_some()

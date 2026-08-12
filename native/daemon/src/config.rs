@@ -19,6 +19,7 @@ pub struct AppConfig {
     pub network: NetworkConfig,
     pub input: InputConfig,
     pub ui: UiConfig,
+    pub sharing: SharingConfig,
 }
 
 /// Configuración de red
@@ -90,12 +91,37 @@ impl Default for UiConfig {
     }
 }
 
+/// Configuración de cómo se comparte este equipo con la red.
+/// Javier: Esto es el "dispositivos registrados" del reto original —
+/// solo compartimos con quien nosotros autorizamos.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct SharingConfig {
+    /// Si este equipo se anuncia en la red local (visible para otros).
+    /// false = invisible: no responde a HELLOs, nadie te descubre.
+    pub visible: bool,
+    /// IPs autorizadas para compartir teclado/ratón.
+    /// Vacío = permitir a cualquiera en la LAN (modo actual).
+    /// Con IPs = solo esos equipos aparecen y pueden conectarse.
+    pub allowed_peers: Vec<String>,
+}
+
+impl Default for SharingConfig {
+    fn default() -> Self {
+        Self {
+            visible: true,
+            allowed_peers: Vec::new(),
+        }
+    }
+}
+
 impl Default for AppConfig {
     fn default() -> Self {
         Self {
             network: NetworkConfig::default(),
             input: InputConfig::default(),
             ui: UiConfig::default(),
+            sharing: SharingConfig::default(),
         }
     }
 }
