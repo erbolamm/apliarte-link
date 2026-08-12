@@ -70,6 +70,15 @@ pub async fn serve(
         conn_mgr.clone(),
     )?;
 
+    #[cfg(target_os = "linux")]
+    linux::start_switch_listener(
+        cfg.clone(),
+        peers.clone(),
+        active_peer.clone(),
+        control_state.clone(),
+        conn_mgr.clone(),
+    )?;
+
     // Receive frames from the transport layer and inject them locally.
     while let Some((_peer_addr, frame)) = event_rx.recv().await {
         match frame {
