@@ -16,6 +16,30 @@ jobs:
       - name: Checkout código
         uses: actions/checkout@v4
 
+      - name: Descargar binarios del release latest y empaquetar en ZIP (los ejecutables sueltos están bloqueados en el plan gratis de Firebase)
+        env:
+          GH_TOKEN: *** secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p public/downloads
+          gh release download --repo erbolamm/apliarte-link \
+            --pattern 'apliarte-link-*' \
+            --dir public/downloads \
+            --clobber
+          cd public/downloads
+          # Los .zip de app (macOS/Windows) ya sirven; solo falta Linux:
+          # comprimir el binario suelto en zip (como "apliarte-link") para que Firebase lo acepte.
+          if [ -f apliarte-link-linux-x64 ] && [ ! -f apliarte-link-linux-x64.zip ]; then
+            mkdir -p linux-tmp
+            cp apliarte-link-linux-x64 linux-tmp/apliarte-link
+            (cd linux-tmp && zip -q ../apliarte-link-linux-x64.zip apliarte-link)
+            rm -rf linux-tmp
+          fi
+          # Eliminar ejecutables sueltos (prohibidos en Spark): se sirven los .zip
+          rm -f apliarte-link-linux-x64 apliarte-link-macos-arm64 apliarte-link-macos-x64 apliarte-link-windows-x64.exe
+          echo "=== Binarios listos (solo ZIP) ==="
+          ls -la
+        working-directory: web
+
       - name: Deploy a Firebase Hosting
         env:
           FIREBASE_TOKEN_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
