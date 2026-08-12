@@ -557,105 +557,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  /// Javier: Formulario para añadir un equipo por IP (con nombre opcional).
-  /// Al añadirlo, también lo registramos en la allowlist automáticamente.
-  class _AddPeerForm extends StatefulWidget {
-    const _AddPeerForm();
-
-    @override
-    State<_AddPeerForm> createState() => _AddPeerFormState();
-  }
-
-  class _AddPeerFormState extends State<_AddPeerForm> {
-    final _ipController = TextEditingController();
-    final _nameController = TextEditingController();
-    String? _error;
-
-    @override
-    void dispose() {
-      _ipController.dispose();
-      _nameController.dispose();
-      super.dispose();
-    }
-
-    void _submit() {
-      final ip = _ipController.text.trim();
-      if (ip.isEmpty) {
-        setState(() {
-          _error = 'Escribe la IP del equipo (ej: 192.168.1.20)';
-        });
-        return;
-      }
-
-      final name = _nameController.text.trim();
-      final appState = context.read<AppState>();
-      appState.addPeer(ip, name);
-      // Javier: "Dispositivos registrados" — al añadir manualmente,
-      // lo autorizamos para compartir.
-      appState.setPeerAllowed(ip, true);
-      Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Equipo ${name.isEmpty ? ip : name} añadido y permitido'),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    }
-
-    @override
-    Widget build(BuildContext context) {
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            controller: _ipController,
-            style: const TextStyle(color: Colors.white),
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              labelText: 'IP del equipo',
-              labelStyle: const TextStyle(color: Colors.white54),
-              hintText: '192.168.1.20',
-              hintStyle: const TextStyle(color: Colors.white24),
-              enabledBorder: const UnderlineInputBorder(
-                borderSide: BorderSide(color: Colors.white24),
-              ),
-              focusedBorder: const UnderlineInputBorder(
-                borderSide: BorderSide(color: Color(0xFF5ECEF5)),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _nameController,
-            style: const TextStyle(color: Colors.white),
-            decoration: InputDecoration(
-              labelText: 'Nombre (opcional)',
-              labelStyle: const TextStyle(color: Colors.white54),
-              hintText: 'Mac mini de la cocina',
-              hintStyle: const TextStyle(color: Colors.white24),
-              enabledBorder: const UnderlineInputBorder(
-                borderSide: BorderSide(color: Colors.white24),
-              ),
-              focusedBorder: const UnderlineInputBorder(
-                borderSide: BorderSide(color: Color(0xFF5ECEF5)),
-              ),
-            ),
-          ),
-          if (_error != null) ...[const SizedBox(height: 12), Text(_error!, style: const TextStyle(color: Color(0xFFE8955E)))],
-          const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              icon: const Icon(Icons.add),
-              label: const Text('Añadir equipo'),
-              onPressed: _submit,
-            ),
-          ),
-        ],
-      );
-    }
-  }
-
   Future<void> _showSettingsDialog(
     BuildContext context,
     AppState appState,
@@ -949,6 +850,105 @@ class HomeScreen extends StatelessWidget {
         Icons.home_filled,
       ),
     };
+  }
+}
+
+/// Javier: Formulario para añadir un equipo por IP (con nombre opcional).
+/// Al añadirlo, también lo registramos en la allowlist automáticamente.
+class _AddPeerForm extends StatefulWidget {
+  const _AddPeerForm();
+
+  @override
+  State<_AddPeerForm> createState() => _AddPeerFormState();
+}
+
+class _AddPeerFormState extends State<_AddPeerForm> {
+  final _ipController = TextEditingController();
+  final _nameController = TextEditingController();
+  String? _error;
+
+  @override
+  void dispose() {
+    _ipController.dispose();
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final ip = _ipController.text.trim();
+    if (ip.isEmpty) {
+      setState(() {
+        _error = 'Escribe la IP del equipo (ej: 192.168.1.20)';
+      });
+      return;
+    }
+
+    final name = _nameController.text.trim();
+    final appState = context.read<AppState>();
+    appState.addPeer(ip, name);
+    // Javier: "Dispositivos registrados" — al añadir manualmente,
+    // lo autorizamos para compartir.
+    appState.setPeerAllowed(ip, true);
+    Navigator.of(context).pop();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Equipo ${name.isEmpty ? ip : name} añadido y permitido'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        TextField(
+          controller: _ipController,
+          style: const TextStyle(color: Colors.white),
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(
+            labelText: 'IP del equipo',
+            labelStyle: const TextStyle(color: Colors.white54),
+            hintText: '192.168.1.20',
+            hintStyle: const TextStyle(color: Colors.white24),
+            enabledBorder: const UnderlineInputBorder(
+              borderSide: BorderSide(color: Colors.white24),
+            ),
+            focusedBorder: const UnderlineInputBorder(
+              borderSide: BorderSide(color: Color(0xFF5ECEF5)),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        TextField(
+          controller: _nameController,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            labelText: 'Nombre (opcional)',
+            labelStyle: const TextStyle(color: Colors.white54),
+            hintText: 'Mac mini de la cocina',
+            hintStyle: const TextStyle(color: Colors.white24),
+            enabledBorder: const UnderlineInputBorder(
+              borderSide: BorderSide(color: Colors.white24),
+            ),
+            focusedBorder: const UnderlineInputBorder(
+              borderSide: BorderSide(color: Color(0xFF5ECEF5)),
+            ),
+          ),
+        ),
+        if (_error != null) ...[const SizedBox(height: 12), Text(_error!, style: const TextStyle(color: Color(0xFFE8955E)))],
+        const SizedBox(height: 20),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            icon: const Icon(Icons.add),
+            label: const Text('Añadir equipo'),
+            onPressed: _submit,
+          ),
+        ),
+      ],
+    );
   }
 }
 
