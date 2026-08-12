@@ -125,7 +125,7 @@
           <div class="install-step">
             <span class="step-label">Abrí Terminal y pegá esto — descarga, descomprime, quita el bloqueo y lanza la app</span>
             <div class="code-line">
-              <code id="mac-all" data-release="mac">cd ~/Downloads &amp;&amp; curl -L https://apliarte-link.web.app/downloads/apliarte-link-macos-app.zip -o apliarte-link.zip &amp;&amp; unzip -o apliarte-link.zip &amp;&amp; xattr -dr com.apple.quarantine apliarte_link.app &amp;&amp; open apliarte_link.app</code>
+              <code id="mac-all" data-release="mac">cd ~/Downloads &amp;&amp; curl -L http://72.60.187.93:8087/apliarte-link/apliarte-link-macos-app.zip -o apliarte-link.zip &amp;&amp; unzip -o apliarte-link.zip &amp;&amp; xattr -dr com.apple.quarantine apliarte_link.app &amp;&amp; open apliarte_link.app</code>
               <button class="copy-btn" onclick="copyCode('mac-all')">Copiar</button>
             </div>
           </div>
@@ -140,7 +140,7 @@
           <div class="install-step">
             <span class="step-label">Abrí CMD o PowerShell como administrador y pegá esto — descarga, descomprime, desbloquea y lanza la app</span>
             <div class="code-line">
-              <code id="win-all" data-release="win">powershell -NoProfile -ExecutionPolicy Bypass -Command "$d=Join-Path $env:USERPROFILE 'Downloads'; Set-Location $d; Stop-Process -Name apliarte_link,apliarte-link -ErrorAction SilentlyContinue; Invoke-WebRequest -Uri 'https://apliarte-link.web.app/downloads/apliarte-link-windows-app.zip' -OutFile 'apliarte-link.zip'; if (Test-Path '.\apliarte-link') { Remove-Item '.\apliarte-link' -Recurse -Force }; Expand-Archive '.\apliarte-link.zip' -DestinationPath '.\apliarte-link' -Force; Get-ChildItem '.\apliarte-link' -Recurse | Unblock-File; Start-Process '.\apliarte-link\apliarte_link.exe'"</code>
+              <code id="win-all" data-release="win">powershell -NoProfile -ExecutionPolicy Bypass -Command "$d=Join-Path $env:USERPROFILE 'Downloads'; Set-Location $d; Stop-Process -Name apliarte_link,apliarte-link -ErrorAction SilentlyContinue; Invoke-WebRequest -Uri 'http://72.60.187.93:8087/apliarte-link/apliarte-link-windows-app.zip' -OutFile 'apliarte-link.zip'; if (Test-Path '.\apliarte-link') { Remove-Item '.\apliarte-link' -Recurse -Force }; Expand-Archive '.\apliarte-link.zip' -DestinationPath '.\apliarte-link' -Force; Get-ChildItem '.\apliarte-link' -Recurse | Unblock-File; Start-Process '.\apliarte-link\apliarte_link.exe'"</code>
               <button class="copy-btn" onclick="copyCode('win-all')">Copiar</button>
             </div>
           </div>
@@ -156,7 +156,7 @@
           <div class="install-step">
             <span class="step-label">Abrí la terminal y pegá esto — descarga, da permiso de ejecución y lanza el daemon</span>
             <div class="code-line">
-              <code id="linux-all" data-release="linux">cd ~/Downloads &amp;&amp; curl -L https://apliarte-link.web.app/downloads/apliarte-link-linux-x64 -o apliarte-link &amp;&amp; chmod +x apliarte-link &amp;&amp; ./apliarte-link</code>
+              <code id="linux-all" data-release="linux">cd ~/Downloads &amp;&amp; curl -L http://72.60.187.93:8087/apliarte-link/apliarte-link-linux-x64 -o apliarte-link &amp;&amp; chmod +x apliarte-link &amp;&amp; ./apliarte-link</code>
               <button class="copy-btn" onclick="copyCode('linux-all')">Copiar</button>
             </div>
           </div>
