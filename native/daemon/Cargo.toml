@@ -40,11 +40,7 @@ hostname = "0.4"
 # Enumeración de interfaces para enviar discovery por cada broadcast local
 if-addrs = "0.13"
 
-# Inventario HID local para listar teclados y ratones conectados
-[target.'cfg(any(target_os = "macos", target_os = "windows"))'.dependencies]
-hidapi = "2.6"
-
-# Serialización binaria — reemplaza JSON para input en tiempo real
+# Serialización binaria — reemplaza JSON para input en tiempo real (todas las plataformas)
 rmp-serde = "1"
 
 # Errores más manejables
@@ -52,6 +48,10 @@ anyhow = "1"
 
 # IPC: comunicación con la UI Flutter
 interprocess = { version = "2", features = ["tokio"] }
+
+# Inventario HID local para listar teclados y ratones conectados
+[target.'cfg(any(target_os = "macos", target_os = "windows"))'.dependencies]
+hidapi = "2.6"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 # Input en macOS — acceso a CGEvent (API del sistema de Apple)
@@ -69,8 +69,8 @@ windows = { version = "0.58", features = [
 ]}
 
 [target.'cfg(target_os = "linux")'.dependencies]
-# TODO Fase 3: descomentar cuando se implemente la inyección real
-# evdev = "0.12"
+# Inyección real de input vía uinput (kernel Linux)
+evdev = "0.12"
 # udev = "0.9"
 
 [[bin]]
