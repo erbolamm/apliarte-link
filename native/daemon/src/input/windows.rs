@@ -52,6 +52,12 @@ fn inject_sync(event: InputEvent) -> Result<()> {
                 (MouseButton::Left, false) => MOUSEEVENTF_LEFTUP,
                 (MouseButton::Right, true) => MOUSEEVENTF_RIGHTDOWN,
                 (MouseButton::Right, false) => MOUSEEVENTF_RIGHTUP,
+                (MouseButton::Middle, true) => {
+                    windows::Win32::UI::Input::KeyboardAndMouse::MOUSEEVENTF_MIDDLEDOWN
+                }
+                (MouseButton::Middle, false) => {
+                    windows::Win32::UI::Input::KeyboardAndMouse::MOUSEEVENTF_MIDDLEUP
+                }
                 _ => MOUSEEVENTF_LEFTDOWN,
             };
 
@@ -85,16 +91,46 @@ fn inject_sync(event: InputEvent) -> Result<()> {
             },
         },
 
-        InputEvent::MouseScroll { dy, .. } => INPUT {
-            r#type: INPUT_MOUSE,
-            Anonymous: windows::Win32::UI::Input::KeyboardAndMouse::INPUT_0 {
-                mi: MOUSEINPUT {
-                    dwFlags: windows::Win32::UI::Input::KeyboardAndMouse::MOUSEEVENTF_WHEEL,
-                    mouseData: (dy * 120.0) as u32,
-                    ..Default::default()
-                },
-            },
-        },
+        InputEvent::MouseScroll { dx, dy, .. } => {
+            // Windows espera el delta de rueda en el HIWORD de mouseData, con signo
+            // (positivo = arriba, negativo = abajo). WHEEL_DELTA = 120 por notch.
+            // El cast a u32 de un float negativo saturaría a 0 — por eso pasamos
+            // por i32 primero (fix: scroll hacia abajo no funcionaba).
+            let mut events = Vec::with_capacity(2);
+            if dy != 0.0 {
+                let wheel_delta = (dy * 120.0) as i32;
+                events.push(INPUT {
+                    r#type: INPUT_MOUSE,
+                    Anonymous: windows::Win32::UI::Input::KeyboardAndMouse::INPUT_0 {
+                        mi: MOUSEINPUT {
+                            dwFlags: windows::Win32::UI::Input::KeyboardAndMouse::MOUSEEVENTF_WHEEL,
+                            mouseData: wheel_delta as u32,
+                            ..Default::default()
+                        },
+                    },
+                });
+            }
+            if dx != 0.0 {
+                let hwheel_delta = (dx * 120.0) as i32;
+                events.push(INPUT {
+                    r#type: INPUT_MOUSE,
+                    Anonymous: windows::Win32::UI::Input::KeyboardAndMouse::INPUT_0 {
+                        mi: MOUSEINPUT {
+                            dwFlags: windows::Win32::UI::Input::KeyboardAndMouse::MOUSEEVENTF_HWHEEL,
+                            mouseData: hwheel_delta as u32,
+                            ..Default::default()
+                        },
+                    },
+                });
+            }
+            if events.is_empty() {
+                return Ok(());
+            }
+            unsafe {
+                SendInput(&events, std::mem::size_of::<INPUT>() as i32);
+            }
+            return Ok(());
+        }
     };
 
     // Javier: SendInput envía el array de inputs al SO

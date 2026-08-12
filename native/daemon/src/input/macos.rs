@@ -15,7 +15,15 @@ use crate::network::ConnectionManager;
 use crate::network::PeerList;
 use anyhow::Result;
 use std::net::SocketAddr;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, OnceLock};
+
+/// Última posición conocida del cursor — para convertir deltas en posición absoluta
+/// (CGEvent de macOS trabaja con coordenadas absolutas de pantalla).
+static LAST_MOUSE_POS: OnceLock<Mutex<Option<(f64, f64)>>> = OnceLock::new();
+
+fn last_mouse_pos() -> &'static Mutex<Option<(f64, f64)>> {
+    LAST_MOUSE_POS.get_or_init(|| Mutex::new(None))
+}
 
 /// Inyecta un evento de input en macOS
 /// Javier: "inyectar" = decirle a macOS que el ratón/teclado hizo algo,
@@ -39,12 +47,19 @@ fn inject_sync(event: InputEvent) -> Result<()> {
 
     match event {
         InputEvent::MouseMove { dx, dy, .. } => {
-            // Javier: Obtenemos la posición actual del ratón y le sumamos el delta
-            // Es como currentOffset + Offset(dx, dy) en Flutter
+            // CGEvent de macOS usa posición ABSOLUTA: hay que sumar el delta a la
+            // posición actual conocida (fix del TODO original "calcular posición absoluta").
+            let mut last = last_mouse_pos().lock().unwrap();
+            let (px, py) = last.unwrap_or((0.0, 0.0));
+            let nx = px + dx;
+            let ny = py + dy;
+            *last = Some((nx, ny));
+            drop(last);
+
             let current = CGEvent::new_mouse_event(
                 source.clone(),
                 CGEventType::MouseMoved,
-                CGPoint::new(dx, dy), // TODO: calcular posición absoluta
+                CGPoint::new(nx, ny),
                 CGMouseButton::Left,
             )
             .map_err(|_| anyhow::anyhow!("Error creando evento de ratón"))?;
@@ -69,29 +84,69 @@ fn inject_sync(event: InputEvent) -> Result<()> {
                 (MouseButton::Left, false) => CGEventType::LeftMouseUp,
                 (MouseButton::Right, true) => CGEventType::RightMouseDown,
                 (MouseButton::Right, false) => CGEventType::RightMouseUp,
-                _ => CGEventType::OtherMouseDown,
+                (MouseButton::Middle, true) => CGEventType::OtherMouseDown,
+                (MouseButton::Middle, false) => CGEventType::OtherMouseUp,
+                (_, true) => CGEventType::OtherMouseDown,
+                (_, false) => CGEventType::OtherMouseUp,
             };
 
-            let evt = CGEvent::new_mouse_event(source, event_type, CGPoint::new(0.0, 0.0), btn)
-                .map_err(|_| anyhow::anyhow!("Error creando evento de click"))?;
+            // Los clicks deben ir en la posición actual del cursor, no en (0,0)
+            let (px, py) = last_mouse_pos()
+                .lock()
+                .unwrap()
+                .unwrap_or((0.0, 0.0));
+            let evt = CGEvent::new_mouse_event(
+                source,
+                event_type,
+                CGPoint::new(px, py),
+                btn,
+            )
+            .map_err(|_| anyhow::anyhow!("Error creando evento de click"))?;
 
             evt.post(CGEventTapLocation::HID);
         }
 
         InputEvent::MouseScroll { dx, dy, .. } => {
-            // TODO: implementar scroll con CGEventCreateScrollWheelEvent
-            tracing::debug!("Scroll: dx={} dy={}", dx, dy);
+            // Implementado: CGEventCreateScrollWheelEvent (rueda con signo, línea/píxel)
+            let evt = CGEvent::new_scroll_event(
+                source,
+                core_graphics::event::CGScrollEventUnit::PIXEL,
+                2,
+                dy as i32,
+                dx as i32,
+                0,
+            )
+            .map_err(|_| anyhow::anyhow!("Error creando evento de scroll"))?;
+
+            evt.post(CGEventTapLocation::HID);
         }
 
         InputEvent::KeyPress {
             key_code,
             pressed,
-            modifiers: _,
+            modifiers,
             ..
         } => {
-            // Javier: CGEvent para teclado — key_code es el código de tecla virtual
+            // CGEvent para teclado — key_code es el código de tecla virtual
             let evt = CGEvent::new_keyboard_event(source, key_code as u16, pressed)
                 .map_err(|_| anyhow::anyhow!("Error creando evento de teclado"))?;
+
+            // Aplicar modificadores (Ctrl/Alt/Shift/Cmd)
+            use core_graphics::event::CGEventFlags;
+            let mut flags = CGEventFlags::empty();
+            if modifiers.ctrl {
+                flags.insert(CGEventFlags::CGEventFlagControl);
+            }
+            if modifiers.alt {
+                flags.insert(CGEventFlags::CGEventFlagAlternate);
+            }
+            if modifiers.shift {
+                flags.insert(CGEventFlags::CGEventFlagShift);
+            }
+            if modifiers.meta {
+                flags.insert(CGEventFlags::CGEventFlagCommand);
+            }
+            evt.set_flags(flags);
 
             evt.post(CGEventTapLocation::HID);
         }
