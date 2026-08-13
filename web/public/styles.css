@@ -111,10 +111,8 @@ h5 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.1em; color
   justify-content: center;
   width: 32px;
   height: 32px;
-  background: var(--gradient);
   border-radius: 8px;
-  font-weight: 800;
-  color: white;
+  object-fit: cover;
   box-shadow: var(--shadow-glow);
 }
 .brand-accent {
