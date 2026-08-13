@@ -1,3 +1,5 @@
+import 'dart:ui' show AppExitResponse;
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/app_state.dart';
@@ -5,7 +7,8 @@ import 'services/ipc_service.dart';
 import 'services/daemon_service.dart';
 import 'screens/home_screen.dart';
 
-// Instancia global para poder pararlo al cerrar la app
+// Instancia global del motor Rust. Se arranca antes que la UI y se para
+// al cerrar la app vía AppLifecycleListener (ver _ApliArteLinkAppState).
 final _daemon = DaemonService();
 
 void main() async {
@@ -32,8 +35,44 @@ void main() async {
   );
 }
 
-class ApliArteLinkApp extends StatelessWidget {
+class ApliArteLinkApp extends StatefulWidget {
   const ApliArteLinkApp({super.key});
+
+  @override
+  State<ApliArteLinkApp> createState() => _ApliArteLinkAppState();
+}
+
+class _ApliArteLinkAppState extends State<ApliArteLinkApp> {
+  late final AppLifecycleListener _lifecycleListener;
+
+  @override
+  void initState() {
+    super.initState();
+    _lifecycleListener = AppLifecycleListener(
+      // Al pedir salir (cerrar ventana, Cmd+Q, etc.) paramos el motor
+      // Rust antes de que el proceso termine.
+      onExitRequested: _onExitRequested,
+      // Red de seguridad: si la app se desmonta sin pasar por
+      // onExitRequested, también paramos el daemon.
+      onDetach: _stopDaemon,
+    );
+  }
+
+  Future<AppExitResponse> _onExitRequested() async {
+    await _stopDaemon();
+    return AppExitResponse.exit;
+  }
+
+  Future<void> _stopDaemon() async {
+    debugPrint('🛑 [App] Cerrando — parando el motor Rust');
+    _daemon.stop();
+  }
+
+  @override
+  void dispose() {
+    _lifecycleListener.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
