@@ -56,3 +56,23 @@ El review transaccional completo (`review start` → lentes → `finalize`) lo e
 ## Fuente de verdad
 
 El **código** es la fuente de verdad de arquitectura, no los docs. Si un doc contradice al código, corregí el doc.
+
+## División de roles: OpenClaw ejecuta, Pi verifica
+
+Este repo se trabaja con dos agentes que cooperan:
+
+- **OpenClaw** (@aplilinuxbot): implementación con SDD, trabajo autónomo, commits (el gate de RDD no lo bloquea).
+- **Pi** (asistente de escritorio): auditorías, validación de reportes contra el código, decisiones de arquitectura, review de código en profundidad, gestión del gate de gentle-ai.
+
+| Situación | Agente |
+|---|---|
+| Implementar una feature siguiendo SDD | OpenClaw |
+| Trabajo autónomo prolongado o repetitivo | OpenClaw |
+| Commit de cambios | OpenClaw (Pi queda bloqueado por el gate RDD) |
+| Auditoría / validación de un reporte contra el código | Pi |
+| Decisión de arquitectura o diseño con tradeoffs | Pi |
+| Review de código en profundidad (red, input, seguridad) | Pi |
+| Verificación de un claim técnico | Pi |
+| Configuración del gate de gentle-ai / RDD | Pi |
+
+Cualquier agente que detecte que la tarea corresponde al otro, debe decírselo al usuario en lugar de hacerla a medias.
