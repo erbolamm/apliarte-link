@@ -3,7 +3,7 @@
 // que defines para la API de tu backend.
 //
 // Cada MovimientoRatón o TeclaPulsada se convierte en un InputEvent
-// que se serializa a bytes y se envía por UDP.
+// que se serializa a bytes (MessagePack) y se envía por TCP+TLS.
 
 use serde::{Deserialize, Serialize};
 

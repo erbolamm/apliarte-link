@@ -46,9 +46,6 @@ rmp-serde = "1"
 # Errores más manejables
 anyhow = "1"
 
-# IPC: comunicación con la UI Flutter
-interprocess = { version = "2", features = ["tokio"] }
-
 # Inventario HID local para listar teclados y ratones conectados
 [target.'cfg(any(target_os = "macos", target_os = "windows"))'.dependencies]
 hidapi = "2.6"

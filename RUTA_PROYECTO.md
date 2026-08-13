@@ -7,7 +7,7 @@ Este archivo existe para evitar confusiones durante la transición de nombre del
 Ruta local actual:
 
 ```text
-/Users/apliarte/trabajo/apliarte-link
+/home/javier/Documentos/repos/apliarte-link
 ```
 
 La carpeta raíz ya usa el nombre nuevo `apliarte-link`.
@@ -37,7 +37,7 @@ apliarte-link
 Ruta local recomendada cuando se haga el cambio controlado:
 
 ```text
-/Users/apliarte/trabajo/apliarte-link
+/home/javier/Documentos/repos/apliarte-link
 ```
 
 ## Identidad Técnica Objetivo

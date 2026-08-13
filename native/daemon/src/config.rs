@@ -26,7 +26,7 @@ pub struct AppConfig {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct NetworkConfig {
-    /// Puerto UDP para comunicarse con otros PCs (por defecto 4242)
+    /// Puerto TCP+TLS para comunicarse con otros PCs (por defecto 4242)
     pub port: u16,
     /// Si se usa encriptación TLS en los paquetes de red
     pub encrypted: bool,

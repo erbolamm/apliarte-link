@@ -10,7 +10,7 @@
 - [x] TCP listener + accept loop
 - [x] TCP outbound connect + handshake
 - [x] MessagePack framing (length-prefixed)
-- [x] Keep-alive (Ping/Pong definido, no activado aún)
+- [x] Keep-alive (Ping cada 3s / timeout 9s — activado en `connect()` y `handle_inbound()`)
 - [x] Connection pool (`HashMap<SocketAddr, Sender<Frame>>`)
 - [x] `send()` y `recv_stream()`
 

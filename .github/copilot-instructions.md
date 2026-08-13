@@ -17,7 +17,7 @@ El repositorio tiene tres superficies principales:
 - El core Rust es el motor del producto y corre en segundo plano.
 - La UI Flutter no debe duplicar lógica del daemon; debe pedir estado o enviar comandos por IPC.
 - El IPC local usa TCP loopback `127.0.0.1:4243` con mensajes JSON por línea.
-- La comunicación entre máquinas usa UDP en el puerto `4242` con eventos serializados como JSON.
+- La comunicación entre máquinas usa TCP+TLS en el puerto `4242` con eventos serializados como MessagePack. El discovery entre peers sigue siendo UDP por broadcast en el puerto `4244`.
 - Los backends de input son específicos por sistema operativo: macOS, Windows y Linux.
 - Mantener separadas las responsabilidades: `network` descubre/recibe/envía, `input` captura/inyecta, `ipc` conversa con la UI, `config` persiste configuración.
 

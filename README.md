@@ -18,7 +18,7 @@ En el MVP actual el cambio de control se hace con un **comando explícito config
 Sin cables. Sin dongles. Sin hardware extra.
 
 ```
-[agenmac]  ←──── UDP 4242 ────→  [agenpc]
+[agenmac]  ←──── TCP+TLS 4242 ────→  [agenpc]
    \__________________________/
      un solo teclado y ratón
 ```
@@ -31,7 +31,7 @@ Sin cables. Sin dongles. Sin hardware extra.
 |---|---|---|
 | macOS 12+ arm64 / x64 | ✅ Base implementada | 🟡 Foco MVP — app usable + ratón/teclado |
 | Windows 10+ x64 | ✅ Base implementada | 🟡 Foco MVP — app usable + ratón/teclado |
-| Linux x64 | 🔵 Esqueleto | ⏸️ Después del MVP macOS/Windows |
+| Linux x64 | ✅ Backend uinput/evdev | 🟡 En desarrollo — app Linux con daemon embebido |
 
 > Los binarios descargables estarán disponibles en [apliarte-link.web.app](https://apliarte-link.web.app) en cuanto pase el primer test end-to-end.
 
@@ -58,25 +58,25 @@ Sin cables. Sin dongles. Sin hardware extra.
 - [x] IPC entre Flutter y daemon vía TCP localhost
 - [x] Cambio de control por comando explícito (triple clic derecho / triple Shift)
 - [x] Confirmación visual en origen y destino al transferir el control
-- [ ] Empaquetado descargable macOS (.dmg) y Windows (.msi/.exe)
+- [x] Empaquetado descargable en .zip (apps macOS/Windows/Linux en GitHub Releases)
 - [ ] Test end-to-end real entre dos equipos físicos
 
-**Stack:** Rust + Flutter · JSON sobre UDP 4242 · Discovery UDP 4244
+**Stack:** Rust + Flutter · MessagePack sobre TCP+TLS 4242 · Discovery UDP 4244
 
 ---
 
 ### Fase 1 — Protocolo confiable 🔒
 
-> Reemplazar la base de transporte antes de que escale el resto.
+> Completada — el transporte entre peers es TCP+TLS+MessagePack desde la Fase 1.
 
 **Por qué:** UDP pierde paquetes y un `MouseUp` perdido deja el botón pegado en el destino. TCP + TLS es lo que usan deskflow y Lan Mouse por este motivo exacto.
 
-- [ ] Migrar transporte de **UDP → TCP** en puerto 4242
-- [ ] Agregar **TLS** con certificados autofirmados por sesión (DTLS se descarta: TCP+TLS es más simple y probado)
-- [ ] Handshake de versión de protocolo (negociar versión común entre peers)
-- [ ] **Keep-alive** cada 3s con timeout tras 3 perdidos → detectar peers caídos al instante
-- [ ] Cambiar serialización de **JSON → MessagePack** (reducción ~8x en latencia y ancho de banda)
-- [ ] Canal de control separado del canal de input (comandos no compiten con eventos de ratón)
+- [x] Transporte migrado de **UDP → TCP** en puerto 4242
+- [x] **TLS** con certificados autofirmados por sesión (DTLS se descarta: TCP+TLS es más simple y probado)
+- [x] Handshake de versión de protocolo (negocia la versión común entre peers, `[1,0]`)
+- [x] **Keep-alive** cada 3s con timeout de 9s → detecta peers caídos al instante
+- [x] Serialización de **JSON → MessagePack** (reducción ~8x en latencia y ancho de banda)
+- [x] Canal de control separado del canal de input (comandos no compiten con eventos de ratón)
 
 **Estado objetivo:** la conexión entre dos equipos no pierde eventos, va cifrada, y detecta desconexiones en <10 segundos.
 
@@ -179,9 +179,8 @@ apliarte-link/
 │       │   ├── protocol.rs       InputEvent + handshake de versión
 │       │   └── mod.rs            Orquestación SENDER/RECEIVER
 │       ├── network/
-│       │   ├── transport.rs      🔜 TCP+TLS+MessagePack (hoy UDP+JSON)
-│       │   ├── discovery.rs      UDP 4244 + 🔜 rendezvous autenticado
-│       │   └── keepalive.rs      🔜 Health checks cada 3s
+│       │   ├── transport.rs      ✅ TCP+TLS+MessagePack + keep-alive (Ping 3s / timeout 9s)
+│       │   ├── discovery.rs      ✅ UDP 4244 · 🔜 rendezvous autenticado (Fase 2)
 │       ├── auth/                 🔜 Identidad, OAuth, lista de amigos
 │       ├── screen/               🔜 Modelo de pantallas y edge-switching
 │       ├── clipboard/            🔜 Portapapeles compartido

@@ -9,8 +9,7 @@
 //   - No abren puertos de red (más seguro)
 //
 // Protocolo IPC:
-//   - Socket Unix en macOS/Linux: /tmp/apliarte-link.sock
-//   - Named Pipe en Windows: \\.\pipe\apliarte-link
+//   - TCP loopback en 127.0.0.1:4243 (solo accesible desde esta máquina)
 //   - Formato mensajes: JSON (un objeto por línea = JSON Lines)
 //
 // Comandos que recibe de Flutter:
