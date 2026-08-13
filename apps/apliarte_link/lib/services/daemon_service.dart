@@ -15,12 +15,13 @@ class DaemonService {
 
   bool get isRunning => _process != null;
 
-  Future<void> start() async {
+  Future<void> start({String? daemonPath}) async {
     if (_started) return;
     _started = true;
 
-    final daemonPath = _resolveDaemonPath();
-    if (daemonPath == null) {
+    // Ruta inyectable para tests; en producción se resuelve sola.
+    final resolvedPath = daemonPath ?? _resolveDaemonPath();
+    if (resolvedPath == null) {
       debugPrint(
         '⚠️ [Daemon] Binario no encontrado — modo desarrollo sin daemon',
       );
@@ -30,7 +31,7 @@ class DaemonService {
     try {
       // ProcessStartMode.normal: capturamos stdout/stderr para ver sus logs
       _process = await Process.start(
-        daemonPath,
+        resolvedPath,
         [],
         mode: ProcessStartMode.normal,
       );

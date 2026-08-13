@@ -11,6 +11,8 @@ class AppState extends ChangeNotifier {
   final IpcService _ipcService;
   StreamSubscription? _ipcSub;
   Timer? _noticeTimer;
+  Timer? _reconnectTimer;
+  int _ticksSinceConnect = 0;
 
   bool _isEngineConnected = false;
   bool _isRunning = false;
@@ -78,36 +80,36 @@ class AppState extends ChangeNotifier {
       }
     });
 
-    _reconnectLoop();
+    _reconnectTimer = Timer.periodic(
+      const Duration(seconds: 1),
+      (_) => _reconnectTick(),
+    );
   }
 
-  // Javier: Un loop que reintenta conectarse al motor si se pierde
-  // y además hace polling del estado para detectar nuevos peers
-  Future<void> _reconnectLoop() async {
-    var ticksSinceConnect = 0;
-    while (true) {
-      if (!_ipcService.isConnected) {
-        await _ipcService.connect();
-        ticksSinceConnect = 0;
+  // Javier: Tick periódico que reintenta conectarse al motor si se pierde
+  // y además hace polling del estado para detectar nuevos peers.
+  // Timer.periodic cancelable en vez de while(true): evita el leak de
+  // timers tras dispose y permite testear sin dejar nada colgado.
+  void _reconnectTick() {
+    if (!_ipcService.isConnected) {
+      unawaited(_ipcService.connect());
+      _ticksSinceConnect = 0;
 
-        if (_ipcService.isConnected) {
-          _isEngineConnected = true;
-          // Pedimos un status inicial a Rust
-          _ipcService.sendCommand({'cmd': 'status'});
-        } else {
-          _isEngineConnected = false;
-        }
-        notifyListeners();
+      if (_ipcService.isConnected) {
+        _isEngineConnected = true;
+        // Pedimos un status inicial a Rust
+        _ipcService.sendCommand({'cmd': 'status'});
       } else {
-        // Polling cada 3 segundos para detectar peers nuevos en la red
-        ticksSinceConnect++;
-        if (ticksSinceConnect >= 3) {
-          ticksSinceConnect = 0;
-          _ipcService.sendCommand({'cmd': 'status'});
-        }
+        _isEngineConnected = false;
       }
-
-      await Future.delayed(const Duration(seconds: 1));
+      notifyListeners();
+    } else {
+      // Polling cada 3 segundos para detectar peers nuevos en la red
+      _ticksSinceConnect++;
+      if (_ticksSinceConnect >= 3) {
+        _ticksSinceConnect = 0;
+        _ipcService.sendCommand({'cmd': 'status'});
+      }
     }
   }
 
@@ -195,6 +197,7 @@ class AppState extends ChangeNotifier {
   void dispose() {
     _ipcSub?.cancel();
     _noticeTimer?.cancel();
+    _reconnectTimer?.cancel();
     _ipcService.disconnect();
     super.dispose();
   }

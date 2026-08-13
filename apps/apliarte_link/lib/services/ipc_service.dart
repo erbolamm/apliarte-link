@@ -9,6 +9,13 @@ import 'package:flutter/foundation.dart';
 import 'package:apliarte_link_core/apliarte_link_core.dart';
 
 class IpcService {
+  IpcService({this.host = '127.0.0.1', this.port = 4243});
+
+  /// Dirección y puerto del daemon Rust. Inyectables para poder testear
+  /// contra un servidor local de prueba.
+  final String host;
+  final int port;
+
   Socket? _socket;
   final StreamController<UiResponse> _responseController =
       StreamController<UiResponse>.broadcast();
@@ -23,7 +30,7 @@ class IpcService {
 
     try {
       // Javier: IPC por TCP local cruzado (Funciona perfecto en Mac, Windows y Linux)
-      _socket = await Socket.connect('127.0.0.1', 4243);
+      _socket = await Socket.connect(host, port);
       debugPrint('🔌 [IPC] Conectado al motor Rust correctamente');
 
       // Escuchamos la respuesta de Rust por cada línea JSON que nos mande
