@@ -126,6 +126,17 @@ jobs:
         run: flutter pub get
         working-directory: apps/apliarte_link
 
+      # Podfile.lock puede quedar desincronizado con el Podfile tras el
+      # upgrade de Flutter (p.ej. al quitar plugins con Pod). Forzamos la
+      # regeneración desde cero para evitar el error de CocoaPods
+      # "Pods-Runner-frameworks-*-input-files.xcfilelist" en CI.
+      - name: Regenerar Pods desde cero (macOS)
+        run: |
+          cd macos
+          rm -rf Pods Podfile.lock .symlinks
+          pod install
+        working-directory: apps/apliarte_link
+
       - name: Compilar app Flutter macOS
         run: flutter build macos --release
         working-directory: apps/apliarte_link
