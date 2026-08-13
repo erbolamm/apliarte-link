@@ -51,10 +51,12 @@
   document.querySelectorAll('.copy-btn').forEach((btn) => {
     btn.addEventListener('click', async (e) => {
       e.preventDefault();
-      const block = btn.closest('.code-block');
-      const code = block?.querySelector('code')?.textContent || '';
-      try {
-        await navigator.clipboard.writeText(code);
+      // El <code> es el hermano anterior del botón dentro de .code-line
+      // (antes se buscaba .code-block, que no existe en el HTML → copiaba vacío).
+      const code = btn.previousElementSibling?.textContent?.trim() || '';
+
+      // Función para mostrar feedback visual
+      function feedback() {
         btn.classList.add('copied');
         const original = btn.textContent;
         btn.textContent = '✓';
@@ -62,8 +64,19 @@
           btn.classList.remove('copied');
           btn.textContent = original;
         }, 1500);
-      } catch (err) {
-        console.error('Copy failed:', err);
+      }
+
+      // Vía 1: Clipboard API (HTTPS)
+      if (navigator.clipboard && window.isSecureContext) {
+        try {
+          await navigator.clipboard.writeText(code);
+          feedback();
+        } catch (_) {
+          fallbackCopy(code, feedback);
+        }
+      } else {
+        // Vía 2: fallback con textarea + execCommand (HTTP y casos especiales)
+        fallbackCopy(code, feedback);
       }
     });
   });
@@ -122,33 +135,8 @@
   })();
 
   // ===== Copy code buttons =====
-  window.copyCode = function (id) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    const text = el.textContent.trim();
-
-    // Función para mostrar feedback visual
-    function feedback() {
-      const btn = el.parentElement.querySelector('.copy-btn');
-      if (!btn) return;
-      const prev = btn.textContent;
-      btn.textContent = '✓';
-      btn.classList.add('copied');
-      setTimeout(function () { btn.textContent = prev; btn.classList.remove('copied'); }, 1500);
-    }
-
-    // Vía 1: Clipboard API (HTTPS)
-    if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(text).then(feedback).catch(function () {
-        fallbackCopy(text, feedback);
-      });
-    } else {
-      // Vía 2: fallback con textarea + execCommand (funciona en más casos)
-      fallbackCopy(text, feedback);
-    }
-  };
-
-  // Fallback: textarea oculto + execCommand('copy')
+  // La lógica vive en el listener de .copy-btn (arriba).
+  // fallbackCopy: textarea oculto + execCommand('copy')
   function fallbackCopy(text, onDone) {
     var ta = document.createElement('textarea');
     ta.value = text;
