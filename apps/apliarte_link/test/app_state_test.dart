@@ -175,6 +175,38 @@ void main() {
       expect(ipc.sentCommands, contains(equals({'cmd': 'set_active_peer', 'ip': '192.168.1.10'})));
     });
 
+    test('activateAndConnect con control inactivo: arma y conecta', () {
+      expect(appState.inputConfig.armed, isFalse);
+      appState.activateAndConnect('192.168.1.10');
+      expect(appState.inputConfig.armed, isTrue);
+      expect(appState.activePeer, '192.168.1.10');
+      expect(
+        ipc.sentCommands,
+        contains(equals({'cmd': 'set_active_peer', 'ip': '192.168.1.10'})),
+      );
+      // El update_input_config debe incluir armed: true.
+      expect(
+        ipc.sentCommands.any((cmd) {
+          if (cmd['cmd'] != 'update_input_config') return false;
+          final input = cmd['input'] as Map<String, dynamic>?;
+          return input?['armed'] == true;
+        }),
+        isTrue,
+      );
+    });
+
+    test('activateAndConnect con control ya activo: solo conecta', () {
+      appState.updateInputConfig(appState.inputConfig.copyWith(armed: true));
+      final commandsBefore = ipc.sentCommands.length;
+      appState.activateAndConnect('192.168.1.10');
+      expect(appState.activePeer, '192.168.1.10');
+      // No debe reenviar update_input_config (ya estaba armado).
+      final inputUpdates = ipc.sentCommands
+          .skip(commandsBefore)
+          .where((cmd) => cmd['cmd'] == 'update_input_config');
+      expect(inputUpdates, isEmpty);
+    });
+
     test('releaseControl limpia activo y envía comando', () {
       appState.connectPeer('192.168.1.10');
       appState.releaseControl();

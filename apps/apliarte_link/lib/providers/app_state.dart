@@ -148,6 +148,15 @@ class AppState extends ChangeNotifier {
     _ipcService.sendCommand({'cmd': 'set_active_peer', 'ip': ip});
   }
 
+  /// Activa el control global si está inactivo y conecta con el peer.
+  /// (Antes esta lógica vivía en el diálogo de PeerCard — P2 del informe.)
+  void activateAndConnect(String ip) {
+    if (!_inputConfig.armed) {
+      updateInputConfig(_inputConfig.copyWith(armed: true));
+    }
+    connectPeer(ip);
+  }
+
   void releaseControl() {
     _activePeer = null;
     notifyListeners();

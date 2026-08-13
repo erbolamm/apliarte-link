@@ -113,12 +113,9 @@ class PeerCard extends StatelessWidget {
                   ),
                   onPressed: allowed
                       ? () {
-                          if (!armed) {
-                            appState.updateInputConfig(
-                              appState.inputConfig.copyWith(armed: true),
-                            );
-                          }
-                          appState.connectPeer(peer.ip);
+                          // P2: la lógica de "activar + conectar" vive en
+                          // AppState.activateAndConnect, no en el widget.
+                          appState.activateAndConnect(peer.ip);
                           Navigator.of(ctx).pop();
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(

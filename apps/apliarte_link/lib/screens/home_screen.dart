@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/app_state.dart';
@@ -21,44 +22,81 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF303030), // Fondo Dark Grey ApliArte
-      body: Stack(
-        children: [
-          Row(
+    return CallbackShortcuts(
+      bindings: {
+        // Atajos de teclado (desktop): la doc de adaptive best practices
+        // pide soportar atajos para los flujos más comunes.
+        const SingleActivator(
+          LogicalKeyboardKey.keyA,
+          control: true,
+          shift: true,
+        ): () => appState.updateInputConfig(
+          appState.inputConfig.copyWith(
+            armed: !appState.inputConfig.armed,
+          ),
+        ),
+        const SingleActivator(
+          LogicalKeyboardKey.keyC,
+          control: true,
+          shift: true,
+        ): () {
+          if (appState.inputConfig.armed &&
+              appState.peers.any((peer) => peer.connected)) {
+            appState.cycleActivePeer();
+          }
+        },
+        const SingleActivator(
+          LogicalKeyboardKey.keyH,
+          control: true,
+          shift: true,
+        ): () {
+          if (appState.activePeer != null) {
+            appState.releaseControl();
+          }
+        },
+      },
+      child: Focus(
+        autofocus: true,
+        child: Scaffold(
+          backgroundColor: const Color(0xFF303030), // Fondo Dark Grey ApliArte
+          body: Stack(
             children: [
-              // Sidebar estilo macOS (minimalista y estrecha)
-              Sidebar(
-                onSettingsPressed: () =>
-                    SettingsDialog.show(context, appState),
-              ),
+              Row(
+                children: [
+                  // Sidebar estilo macOS (minimalista y estrecha)
+                  Sidebar(
+                    onSettingsPressed: () =>
+                        SettingsDialog.show(context, appState),
+                  ),
 
-              // Contenido principal
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: RadialGradient(
-                      colors: [
-                        const Color(0xFF005FA9).withValues(alpha: 0.2),
-                        const Color(0xFF303030),
-                      ], // Degradado azul ApliArte
-                      radius: 1.5,
-                      center: Alignment.topLeft,
+                  // Contenido principal
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: RadialGradient(
+                          colors: [
+                            const Color(0xFF005FA9).withValues(alpha: 0.2),
+                            const Color(0xFF303030),
+                          ], // Degradado azul ApliArte
+                          radius: 1.5,
+                          center: Alignment.topLeft,
+                        ),
+                      ),
+                      child: _MainContent(appState: appState),
                     ),
                   ),
-                  child: _MainContent(appState: appState),
-                ),
+                ],
               ),
+              if (appState.activeNotice != null)
+                Positioned(
+                  top: 28,
+                  left: 110,
+                  right: 32,
+                  child: NoticeBanner(notice: appState.activeNotice!),
+                ),
             ],
           ),
-          if (appState.activeNotice != null)
-            Positioned(
-              top: 28,
-              left: 110,
-              right: 32,
-              child: NoticeBanner(notice: appState.activeNotice!),
-            ),
-        ],
+        ),
       ),
     );
   }

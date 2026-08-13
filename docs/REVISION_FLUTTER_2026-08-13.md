@@ -212,3 +212,21 @@ Nuevo `.github/workflows/ci.yml` (reutilizable):
 **Nota:** la ejecución real del CI solo se comprueba con el primer push a main o tag — la sintaxis está validada localmente.
 
 **Pendiente del informe:** lógica de diálogos → AppState (P2), limpieza P3 (fuente Inter, shared_preferences, atajos de teclado).
+
+---
+
+## 10. Actualización 2026-08-13: P2 lógica en AppState + P3 limpieza ✅
+
+**P2 — Lógica de diálogos → AppState:**
+- Nuevo `AppState.activateAndConnect(ip)`: activa el control global si está inactivo y conecta con el peer. Antes esa lógica vivía en el diálogo de `PeerCard` (onPressed). Ahora el widget solo llama al método del ViewModel.
+- `PeerCard` actualizado para usarlo (el widget ya no decide "armar + conectar", solo lo pide).
+- 2 tests nuevos: con control inactivo (arma y conecta, verifica `update_input_config` con `armed:true`) y con control ya activo (solo conecta, no reenvía config).
+
+**P3 — Limpieza:**
+- **`shared_preferences` eliminada** del pubspec (confirmado: no se usaba en `lib/`). El registrante de plugins de macOS se regeneró solo.
+- **Fuente Inter embebida** (`assets/fonts/Inter-Variable.ttf`, 857K, variable font del repo oficial google/fonts + `OFL.txt` licencia). Antes el tema declaraba `fontFamily: 'Inter'` sin asset → caía a la fuente del sistema en silencio. Ahora funciona en cualquier máquina.
+- **Atajos de teclado** (la doc de adaptive lo pide para desktop): `CallbackShortcuts` en HomeScreen con `Ctrl+Shift+A` (activar/desactivar control), `Ctrl+Shift+C` (cambiar equipo, solo si armed y hay peers conectados), `Ctrl+Shift+H` (volver aquí, solo si hay peer activo).
+
+**Verificado:** `flutter analyze` → No issues · `flutter test` → **32/32** (app) · `dart test` → **13/13** (core).
+
+**Pendiente:** nada del informe original — queda el warning menor del CI (checkout@v4 en Node 24) y decisiones futuras de producto.
