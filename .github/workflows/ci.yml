@@ -1,0 +1,46 @@
+name: CI — Calidad (flutter analyze + tests)
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  # Reutilizable desde release.yml: bloquea el release si la calidad falla.
+  workflow_call:
+
+jobs:
+  quality:
+    name: Analyze + tests (app y core)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Instalar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      # ── App Flutter ────────────────────────────────────────────────────────
+      - name: Flutter pub get (app)
+        run: flutter pub get
+        working-directory: apps/apliarte_link
+
+      - name: flutter analyze (app)
+        run: flutter analyze
+        working-directory: apps/apliarte_link
+
+      - name: flutter test (app)
+        run: flutter test
+        working-directory: apps/apliarte_link
+
+      # ── Paquete core ───────────────────────────────────────────────────────
+      - name: Dart pub get (core)
+        run: dart pub get
+        working-directory: packages/apliarte_link_core
+
+      - name: dart test (core)
+        run: dart test
+        working-directory: packages/apliarte_link_core
