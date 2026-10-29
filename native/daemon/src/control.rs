@@ -180,6 +180,30 @@ pub fn release_control(
     true
 }
 
+/// Maneja la desconexión abrupta o caída de enlace (TCP drop o timeout keep-alive) de un peer.
+/// Si el peer caído era el que estábamos controlando de forma remota, libera inmediatamente
+/// el control y restaura el control de teclado y ratón a la pantalla local.
+pub fn handle_peer_disconnected(
+    disconnected_addr: SocketAddr,
+    active_peer: &Arc<Mutex<Option<SocketAddr>>>,
+    control_state: &ControlState,
+) -> bool {
+    let current = current_active_peer(active_peer);
+    if current == Some(disconnected_addr) {
+        set_active_peer_value(active_peer, None);
+        let mut state = control_state.lock().unwrap();
+        state.mark_local_control();
+        tracing::warn!(
+            "⚠️ Enlace perdido con peer activo {}. Control devuelto a pantalla local.",
+            disconnected_addr
+        );
+        true
+    } else {
+        false
+    }
+}
+
+
 pub fn current_active_peer(active_peer: &Arc<Mutex<Option<SocketAddr>>>) -> Option<SocketAddr> {
     let current_active = active_peer.lock().unwrap();
     *current_active
@@ -241,8 +265,12 @@ fn apply_transfer(
         let msg = ControlMessage::Release {
             source_name: source_name.clone(),
         };
+        let release_events = create_release_modifier_events();
         if let Ok(handle) = tokio::runtime::Handle::try_current() {
             handle.spawn(async move {
+                for event in release_events {
+                    mgr.send(previous_addr, Frame::Input(event)).await;
+                }
                 mgr.send(previous_addr, Frame::Control(msg)).await;
             });
         }
@@ -292,3 +320,104 @@ fn matches_mouse_command(command: &str, button: &MouseButton) -> bool {
         ("triple_right_click", MouseButton::Right) | ("triple_middle_click", MouseButton::Middle)
     )
 }
+
+/// Dead corners: evita cambios involuntarios de pantalla cuando el ratón se acerca a las esquinas.
+/// corner_size define el tamaño en píxeles del área muerta (por defecto 32.0 px).
+pub fn is_in_dead_corner(x: f64, y: f64, screen_width: f64, screen_height: f64, corner_size: f64) -> bool {
+    if corner_size <= 0.0 || screen_width <= 0.0 || screen_height <= 0.0 {
+        return false;
+    }
+    let in_left = x < corner_size;
+    let in_right = x >= (screen_width - corner_size);
+    let in_top = y < corner_size;
+    let in_bottom = y >= (screen_height - corner_size);
+
+    (in_left && in_top) || (in_right && in_top) || (in_left && in_bottom) || (in_right && in_bottom)
+}
+
+/// Keycodes estándar para teclas modificadoras (Shift, Ctrl, Alt, Meta).
+pub const MODIFIER_KEY_CODES: [u32; 4] = [
+    0x38, // Shift (ej: Shift_L en macOS/X11/Win virtual key)
+    0x3B, // Control
+    0x3A, // Alt / Option
+    0x37, // Meta / Command / Super
+];
+
+/// Genera eventos KeyPress(pressed: false) para soltar todas las teclas modificadoras
+/// (Shift, Ctrl, Alt, Meta) al cambiar de pantalla o perder foco, evitando teclas pegadas.
+pub fn create_release_modifier_events() -> Vec<InputEvent> {
+    MODIFIER_KEY_CODES
+        .iter()
+        .map(|&code| InputEvent::KeyPress {
+            key_code: code,
+            pressed: false,
+            modifiers: Default::default(),
+            seq: 0,
+        })
+        .collect()
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_dead_corners() {
+        let w = 1920.0;
+        let h = 1080.0;
+        let corner = 32.0;
+
+        // Top-left corner
+        assert!(is_in_dead_corner(5.0, 5.0, w, h, corner));
+        assert!(is_in_dead_corner(0.0, 0.0, w, h, corner));
+        assert!(is_in_dead_corner(31.9, 31.9, w, h, corner));
+
+        // Top-right corner
+        assert!(is_in_dead_corner(1900.0, 5.0, w, h, corner));
+        assert!(is_in_dead_corner(1919.0, 0.0, w, h, corner));
+
+        // Bottom-left corner
+        assert!(is_in_dead_corner(5.0, 1070.0, w, h, corner));
+
+        // Bottom-right corner
+        assert!(is_in_dead_corner(1915.0, 1075.0, w, h, corner));
+
+        // Edge middle (NOT a dead corner - switch should be allowed)
+        assert!(!is_in_dead_corner(1919.0, 540.0, w, h, corner));
+        assert!(!is_in_dead_corner(0.0, 540.0, w, h, corner));
+        assert!(!is_in_dead_corner(960.0, 0.0, w, h, corner));
+        assert!(!is_in_dead_corner(960.0, 1079.0, w, h, corner));
+
+        // Screen center
+        assert!(!is_in_dead_corner(960.0, 540.0, w, h, corner));
+    }
+
+    #[test]
+    fn test_release_modifier_events() {
+        let events = create_release_modifier_events();
+        assert_eq!(events.len(), 4);
+    }
+
+    #[test]
+    fn test_handle_peer_disconnected_restores_local_control() {
+        let control_state = Arc::new(Mutex::new(ControlStatus::new("Mac".to_string())));
+        let addr: SocketAddr = "192.168.1.50:4242".parse().unwrap();
+        let active_peer = Arc::new(Mutex::new(Some(addr)));
+
+        {
+            let mut state = control_state.lock().unwrap();
+            state.mark_source_transfer("Windows");
+        }
+
+        handle_peer_disconnected(addr, &active_peer, &control_state);
+
+        assert_eq!(*active_peer.lock().unwrap(), None);
+        let state = control_state.lock().unwrap();
+        assert_eq!(state.controller_name, None);
+        assert!(!state.assigned_here);
+        assert_eq!(state.transfer_notice.as_ref().unwrap().role, "local");
+    }
+}
+
+
