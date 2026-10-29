@@ -2,7 +2,7 @@
 
 > **KVM virtual por red local** — Comparte un teclado y ratón entre Mac y Windows sin cables.
 
-🌐 **[apliarte-link.web.app](https://apliarte-link.web.app)**
+🌐 **[erbolamm.github.io/apliarte-link](https://erbolamm.github.io/apliarte-link/)**
 
 [![Estado](https://img.shields.io/badge/estado-MVP%20macOS%20%2B%20Windows-orange)](#estado-actual)
 [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-blue)](#plataformas)
@@ -18,7 +18,7 @@ En el MVP actual el cambio de control se hace con un **comando explícito config
 Sin cables. Sin dongles. Sin hardware extra.
 
 ```
-[agenmac]  ←──── TCP+TLS 4242 ────→  [agenpc]
+[agenmac]  ←──── UDP 4242 ────→  [agenpc]
    \__________________________/
      un solo teclado y ratón
 ```
@@ -31,11 +31,67 @@ Sin cables. Sin dongles. Sin hardware extra.
 |---|---|---|
 | macOS 12+ arm64 / x64 | ✅ Base implementada | 🟡 Foco MVP — app usable + ratón/teclado |
 | Windows 10+ x64 | ✅ Base implementada | 🟡 Foco MVP — app usable + ratón/teclado |
-| Linux x64 | ✅ Backend uinput/evdev | 🟡 En desarrollo — app Linux con daemon embebido |
+| Linux x64 | 🔵 Esqueleto | ⏸️ Después del MVP macOS/Windows |
 
 > Los binarios descargables estarán disponibles en [apliarte-link.web.app](https://apliarte-link.web.app) en cuanto pase el primer test end-to-end.
 
 > El foco inmediato no es meter extras. El foco es cerrar una primera app usable en macOS y Windows donde ya se pueda trabajar con ratón y teclado entre dos equipos.
+
+---
+
+## Guía de instalación y primer uso
+
+ApliArte Link está diseñado para que cualquier usuario pueda instalarlo y usarlo en su sistema operativo preferido.
+
+### 🍏 macOS (Intel & Apple Silicon)
+1. **Descarga**: Descarga `apliarte-link-macos-app.zip` (o el binario del daemon `apliarte-link-macos-arm64` / `x64`) desde los Releases de GitHub.
+2. **Instalación**: Descomprime el archivo y arrastra `apliarte_link.app` a tu carpeta `/Applications`.
+3. **Primer arranque**: Abre la app. Si macOS muestra una advertencia de desarrollador no identificado:
+   - Ve a **Ajustes del Sistema → Privacidad y seguridad** y haz clic en *Abrir de todos modos*.
+4. **Permisos necesarios**:
+   - **Accesibilidad**: Permite a ApliArte Link interceptar e inyectar clics y movimientos. Actívalo en *Ajustes del Sistema → Privacidad y seguridad → Accesibilidad*.
+   - **Monitorización de entrada (Input Monitoring)**: Necesario para capturar las combinaciones de teclas de cambio (ej. triple Shift derecho). Actívalo en *Ajustes del Sistema → Privacidad y seguridad → Monitorización de entrada*.
+   - **Red local**: Acepta el cuadro de diálogo para permitir conexiones entrantes en la red local.
+
+---
+
+### 🪟 Windows (Windows 10 / 11 x64)
+1. **Descarga**: Descarga `apliarte-link-windows-app.zip` (o `apliarte-link-windows-x64.exe`) desde los Releases.
+2. **Instalación**: Extrae el contenido en una carpeta (ejemplo: `C:\Program Files\ApliArteLink` o `C:\Tools\ApliArteLink`).
+3. **Primer arranque**: Ejecuta `apliarte_link.exe`.
+4. **Permisos y configuración**:
+   - **Control de Cuentas de Usuario (UAC)**: Si ejecutas aplicaciones elevadas como administrador, ejecuta ApliArte Link con permisos de administrador para poder inyectar input en esas ventanas.
+   - **Firewall de Windows**: Permite la comunicación en redes privadas cuando aparezca la ventana emergente de Windows Defender.
+   - **Inicio automático (opcional / paso manual)**: Para que el daemon arranque silenciosamente al iniciar sesión sin ventana de consola, puedes registrar una tarea en el Programador de tareas de Windows:
+     ```cmd
+     schtasks /create /tn "ApliArteLink" /tr "C:\Ruta\apliarte-link.exe" /sc onlogon /rl highest /f
+     ```
+
+---
+
+### 🐧 Linux (Ubuntu / Debian y derivados x64)
+1. **Descarga**: Descarga `apliarte-link-linux-app.tar.gz` o el paquete `.deb` (`apliarte-link-x86_64-unknown-linux-gnu.deb`).
+2. **Instalación**:
+   - Vía paquete Debian:
+     ```bash
+     sudo dpkg -i apliarte-link*.deb || sudo apt-get install -f
+     ```
+   - O descomprimiendo el bundle:
+     ```bash
+     tar -xzvf apliarte-link-linux-app.tar.gz
+     cd bundle && ./apliarte_link
+     ```
+3. **Dependencias y permisos**:
+   - Librerías necesarias: `libgtk-3-0`, `liblzma5`.
+   - **Permiso uinput**: Para que el daemon pueda simular dispositivos de teclado y ratón virtuales, el usuario debe tener permisos sobre `/dev/uinput`:
+     ```bash
+     sudo usermod -a -G input $USER
+     echo 'KERNEL=="uinput", MODE="0660", GROUP="input", OPTIONS+="static_node=uinput"' | sudo tee /etc/udev/rules.d/99-uinput.rules
+     sudo udevadm control --reload-rules && sudo udevadm trigger
+     ```
+     *(Reinicia sesión para que los permisos de grupo surtan efecto).*
+
+---
 
 ## Roadmap
 
@@ -58,25 +114,25 @@ Sin cables. Sin dongles. Sin hardware extra.
 - [x] IPC entre Flutter y daemon vía TCP localhost
 - [x] Cambio de control por comando explícito (triple clic derecho / triple Shift)
 - [x] Confirmación visual en origen y destino al transferir el control
-- [x] Empaquetado descargable en .zip (apps macOS/Windows/Linux en GitHub Releases)
+- [ ] Empaquetado descargable macOS (.dmg) y Windows (.msi/.exe)
 - [ ] Test end-to-end real entre dos equipos físicos
 
-**Stack:** Rust + Flutter · MessagePack sobre TCP+TLS 4242 · Discovery UDP 4244
+**Stack:** Rust + Flutter · JSON sobre UDP 4242 · Discovery UDP 4244
 
 ---
 
 ### Fase 1 — Protocolo confiable 🔒
 
-> Completada — el transporte entre peers es TCP+TLS+MessagePack desde la Fase 1.
+> Reemplazar la base de transporte antes de que escale el resto.
 
 **Por qué:** UDP pierde paquetes y un `MouseUp` perdido deja el botón pegado en el destino. TCP + TLS es lo que usan deskflow y Lan Mouse por este motivo exacto.
 
-- [x] Transporte migrado de **UDP → TCP** en puerto 4242
-- [x] **TLS** con certificados autofirmados por sesión (DTLS se descarta: TCP+TLS es más simple y probado)
-- [x] Handshake de versión de protocolo (negocia la versión común entre peers, `[1,0]`)
-- [x] **Keep-alive** cada 3s con timeout de 9s → detecta peers caídos al instante
-- [x] Serialización de **JSON → MessagePack** (reducción ~8x en latencia y ancho de banda)
-- [x] Canal de control separado del canal de input (comandos no compiten con eventos de ratón)
+- [ ] Migrar transporte de **UDP → TCP** en puerto 4242
+- [ ] Agregar **TLS** con certificados autofirmados por sesión (DTLS se descarta: TCP+TLS es más simple y probado)
+- [ ] Handshake de versión de protocolo (negociar versión común entre peers)
+- [ ] **Keep-alive** cada 3s con timeout tras 3 perdidos → detectar peers caídos al instante
+- [ ] Cambiar serialización de **JSON → MessagePack** (reducción ~8x en latencia y ancho de banda)
+- [ ] Canal de control separado del canal de input (comandos no compiten con eventos de ratón)
 
 **Estado objetivo:** la conexión entre dos equipos no pierde eventos, va cifrada, y detecta desconexiones en <10 segundos.
 
@@ -179,8 +235,9 @@ apliarte-link/
 │       │   ├── protocol.rs       InputEvent + handshake de versión
 │       │   └── mod.rs            Orquestación SENDER/RECEIVER
 │       ├── network/
-│       │   ├── transport.rs      ✅ TCP+TLS+MessagePack + keep-alive (Ping 3s / timeout 9s)
-│       │   ├── discovery.rs      ✅ UDP 4244 · 🔜 rendezvous autenticado (Fase 2)
+│       │   ├── transport.rs      🔜 TCP+TLS+MessagePack (hoy UDP+JSON)
+│       │   ├── discovery.rs      UDP 4244 + 🔜 rendezvous autenticado
+│       │   └── keepalive.rs      🔜 Health checks cada 3s
 │       ├── auth/                 🔜 Identidad, OAuth, lista de amigos
 │       ├── screen/               🔜 Modelo de pantallas y edge-switching
 │       ├── clipboard/            🔜 Portapapeles compartido
