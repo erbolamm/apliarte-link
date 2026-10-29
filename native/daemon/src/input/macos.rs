@@ -107,6 +107,7 @@ pub fn start_switch_listener(
     control_state: ControlState,
     conn_mgr: ConnectionManager,
 ) -> Result<()> {
+    let rt_handle = tokio::runtime::Handle::current();
     std::thread::Builder::new()
         .name("apliarte-link-switch-macos".to_string())
         .spawn(move || {
@@ -123,6 +124,7 @@ pub fn start_switch_listener(
             let callback_active_peer = active_peer.clone();
             let callback_control_state = control_state.clone();
             let callback_conn_mgr = conn_mgr.clone();
+            let callback_rt = rt_handle.clone();
 
             let tap = CGEventTap::new(
                 CGEventTapLocation::HID,
@@ -216,7 +218,7 @@ pub fn start_switch_listener(
                         let mgr = callback_conn_mgr.clone();
                         let peer = callback_active_peer.clone();
                         let event_clone = input_event.clone();
-                        tokio::spawn(async move {
+                        callback_rt.spawn(async move {
                             control::send_input_to_active_peer(&mgr, &peer, &event_clone).await;
                         });
                         None

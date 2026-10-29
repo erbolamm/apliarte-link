@@ -241,9 +241,11 @@ fn apply_transfer(
         let msg = ControlMessage::Release {
             source_name: source_name.clone(),
         };
-        tokio::spawn(async move {
-            mgr.send(previous_addr, Frame::Control(msg)).await;
-        });
+        if let Ok(handle) = tokio::runtime::Handle::try_current() {
+            handle.spawn(async move {
+                mgr.send(previous_addr, Frame::Control(msg)).await;
+            });
+        }
     }
 
     if let Some(next_addr) = next {
@@ -254,9 +256,11 @@ fn apply_transfer(
         }
 
         let msg = ControlMessage::Assign { source_name };
-        tokio::spawn(async move {
-            conn_mgr.send(next_addr, Frame::Control(msg)).await;
-        });
+        if let Ok(handle) = tokio::runtime::Handle::try_current() {
+            handle.spawn(async move {
+                conn_mgr.send(next_addr, Frame::Control(msg)).await;
+            });
+        }
     } else {
         let mut state = control_state.lock().unwrap();
         state.mark_local_control();
