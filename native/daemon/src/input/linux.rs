@@ -25,15 +25,15 @@ fn inject_sync(event: InputEvent) -> Result<()> {
     // Es un TODO que se completará en Fase 3 del plan de desarrollo
 
     match event {
-        InputEvent::MouseMove { dx, dy } => {
+        InputEvent::MouseMove { dx, dy, .. } => {
             tracing::debug!("[Linux] MouseMove dx={} dy={}", dx, dy);
             // TODO Fase 3: Implementar con evdev REL_X / REL_Y
         }
-        InputEvent::MouseButton { button, pressed } => {
+        InputEvent::MouseButton { button, pressed, .. } => {
             tracing::debug!("[Linux] MouseButton {:?} pressed={}", button, pressed);
             // TODO Fase 3: Implementar con evdev BTN_LEFT, BTN_RIGHT
         }
-        InputEvent::MouseScroll { dx, dy } => {
+        InputEvent::MouseScroll { dx, dy, .. } => {
             tracing::debug!("[Linux] Scroll dx={} dy={}", dx, dy);
             // TODO Fase 3: Implementar con evdev REL_WHEEL
         }

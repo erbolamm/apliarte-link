@@ -40,10 +40,6 @@ hostname = "0.4"
 # Enumeración de interfaces para enviar discovery por cada broadcast local
 if-addrs = "0.13"
 
-# Inventario HID local para listar teclados y ratones conectados
-[target.'cfg(any(target_os = "macos", target_os = "windows"))'.dependencies]
-hidapi = "2.6"
-
 # Serialización binaria — reemplaza JSON para input en tiempo real
 rmp-serde = "1"
 
@@ -52,6 +48,10 @@ anyhow = "1"
 
 # IPC: comunicación con la UI Flutter
 interprocess = { version = "2", features = ["tokio"] }
+
+# Inventario HID local para listar teclados y ratones conectados
+[target.'cfg(any(target_os = "macos", target_os = "windows"))'.dependencies]
+hidapi = "2.6"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 # Input en macOS — acceso a CGEvent (API del sistema de Apple)
