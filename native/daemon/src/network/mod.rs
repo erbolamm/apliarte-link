@@ -6,6 +6,7 @@
 //
 // The old UDP+JSON input channel has been replaced by transport.rs.
 
+pub mod danger_tls;
 pub mod discovery;
 pub mod transport;
 

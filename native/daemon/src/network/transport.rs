@@ -194,15 +194,28 @@ impl ConnectionPool {
         Ok(())
     }
 
-    /// Send a frame to a specific peer. Fails silently if not connected.
+    /// Send a frame to a specific peer. Automatically connects if not yet connected.
     pub async fn send(self: &ConnectionManager, addr: SocketAddr, frame: Frame) {
+        {
+            let pool = self.connections.read().await;
+            if let Some(tx) = pool.get(&addr) {
+                if tx.send(frame.clone()).await.is_ok() {
+                    return;
+                }
+            }
+        }
+
+        // Si no está en el pool o el canal estaba cerrado, intentamos conectar
+        if let Err(e) = self.connect(addr).await {
+            tracing::debug!("No se pudo conectar a {} para enviar frame: {}", addr, e);
+            return;
+        }
+
         let pool = self.connections.read().await;
         if let Some(tx) = pool.get(&addr) {
             if tx.send(frame).await.is_err() {
-                tracing::debug!("Canal cerrado para {}", addr);
+                tracing::debug!("Canal cerrado para {} tras conectar", addr);
             }
-        } else {
-            tracing::debug!("No hay conexión a {}, frame descartado", addr);
         }
     }
 
@@ -391,9 +404,10 @@ fn build_tls_config() -> Result<(TlsAcceptor, TlsConnector)> {
         .with_no_client_auth()
         .with_single_cert(vec![cert_der.clone()], key_der.clone_key())?;
 
-    // Client config: trusts our cert (self-signed)
+    // Client config: trusts peers with self-signed certificate on local LAN
     let client_config = rustls::ClientConfig::builder()
-        .with_root_certificates(roots)
+        .dangerous()
+        .with_custom_certificate_verifier(Arc::new(super::danger_tls::SkipServerVerification))
         .with_no_client_auth();
 
     Ok((
