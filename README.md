@@ -37,6 +37,62 @@ Sin cables. Sin dongles. Sin hardware extra.
 
 > El foco inmediato no es meter extras. El foco es cerrar una primera app usable en macOS y Windows donde ya se pueda trabajar con ratón y teclado entre dos equipos.
 
+---
+
+## Guía de instalación y primer uso
+
+ApliArte Link está diseñado para que cualquier usuario pueda instalarlo y usarlo en su sistema operativo preferido.
+
+### 🍏 macOS (Intel & Apple Silicon)
+1. **Descarga**: Descarga `apliarte-link-macos-app.zip` (o el binario del daemon `apliarte-link-macos-arm64` / `x64`) desde los Releases de GitHub.
+2. **Instalación**: Descomprime el archivo y arrastra `apliarte_link.app` a tu carpeta `/Applications`.
+3. **Primer arranque**: Abre la app. Si macOS muestra una advertencia de desarrollador no identificado:
+   - Ve a **Ajustes del Sistema → Privacidad y seguridad** y haz clic en *Abrir de todos modos*.
+4. **Permisos necesarios**:
+   - **Accesibilidad**: Permite a ApliArte Link interceptar e inyectar clics y movimientos. Actívalo en *Ajustes del Sistema → Privacidad y seguridad → Accesibilidad*.
+   - **Monitorización de entrada (Input Monitoring)**: Necesario para capturar las combinaciones de teclas de cambio (ej. triple Shift derecho). Actívalo en *Ajustes del Sistema → Privacidad y seguridad → Monitorización de entrada*.
+   - **Red local**: Acepta el cuadro de diálogo para permitir conexiones entrantes en la red local.
+
+---
+
+### 🪟 Windows (Windows 10 / 11 x64)
+1. **Descarga**: Descarga `apliarte-link-windows-app.zip` (o `apliarte-link-windows-x64.exe`) desde los Releases.
+2. **Instalación**: Extrae el contenido en una carpeta (ejemplo: `C:\Program Files\ApliArteLink` o `C:\Tools\ApliArteLink`).
+3. **Primer arranque**: Ejecuta `apliarte_link.exe`.
+4. **Permisos y configuración**:
+   - **Control de Cuentas de Usuario (UAC)**: Si ejecutas aplicaciones elevadas como administrador, ejecuta ApliArte Link con permisos de administrador para poder inyectar input en esas ventanas.
+   - **Firewall de Windows**: Permite la comunicación en redes privadas cuando aparezca la ventana emergente de Windows Defender.
+   - **Inicio automático (opcional / paso manual)**: Para que el daemon arranque silenciosamente al iniciar sesión sin ventana de consola, puedes registrar una tarea en el Programador de tareas de Windows:
+     ```cmd
+     schtasks /create /tn "ApliArteLink" /tr "C:\Ruta\apliarte-link.exe" /sc onlogon /rl highest /f
+     ```
+
+---
+
+### 🐧 Linux (Ubuntu / Debian y derivados x64)
+1. **Descarga**: Descarga `apliarte-link-linux-app.tar.gz` o el paquete `.deb` (`apliarte-link-x86_64-unknown-linux-gnu.deb`).
+2. **Instalación**:
+   - Vía paquete Debian:
+     ```bash
+     sudo dpkg -i apliarte-link*.deb || sudo apt-get install -f
+     ```
+   - O descomprimiendo el bundle:
+     ```bash
+     tar -xzvf apliarte-link-linux-app.tar.gz
+     cd bundle && ./apliarte_link
+     ```
+3. **Dependencias y permisos**:
+   - Librerías necesarias: `libgtk-3-0`, `liblzma5`.
+   - **Permiso uinput**: Para que el daemon pueda simular dispositivos de teclado y ratón virtuales, el usuario debe tener permisos sobre `/dev/uinput`:
+     ```bash
+     sudo usermod -a -G input $USER
+     echo 'KERNEL=="uinput", MODE="0660", GROUP="input", OPTIONS+="static_node=uinput"' | sudo tee /etc/udev/rules.d/99-uinput.rules
+     sudo udevadm control --reload-rules && sudo udevadm trigger
+     ```
+     *(Reinicia sesión para que los permisos de grupo surtan efecto).*
+
+---
+
 ## Roadmap
 
 ### Principios de diseño
