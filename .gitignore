@@ -38,3 +38,6 @@ __MACOSX/
 
 # Logs
 *.log
+
+# Estandar Soberano ErBolamm (ADR-0013)
+control-erbolamm/
