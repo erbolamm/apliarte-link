@@ -1,4 +1,4 @@
-name: Release — Compilar binarios para todas las plataformas
+name: Release — Compilar y Publicar Binarios Multiplataforma
 
 on:
   push:
@@ -9,9 +9,48 @@ env:
   CARGO_TERM_COLOR: always
   BIN_NAME: apliarte-link
 
+permissions:
+  contents: write
+
 jobs:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # 1. Crear el Release en estado Draft
+  # ─────────────────────────────────────────────────────────────────────────────
+  create-draft:
+    name: Inicializar Release (Draft)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Crear Release Draft en GitHub
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ github.ref_name }}"
+          PRERELEASE=""
+          if [[ "$TAG" == *alpha* ]] || [[ "$TAG" == *beta* ]] || [[ "$TAG" == *rc* ]]; then
+            PRERELEASE="--prerelease"
+          fi
+
+          if ! gh release view "$TAG" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+            gh release create "$TAG" \
+              --repo "${{ github.repository }}" \
+              --title "$TAG" \
+              --draft \
+              --generate-notes \
+              $PRERELEASE
+            echo "✅ Release draft creado para $TAG"
+          else
+            echo "ℹ️ Release $TAG ya existía como draft. Reutilizando..."
+          fi
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # 2. Compilar daemons CLI Rust para todas las plataformas
+  # ─────────────────────────────────────────────────────────────────────────────
   build:
-    name: Compilar ${{ matrix.target }}
+    name: Compilar CLI (${{ matrix.asset_name }})
+    needs: create-draft
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -20,22 +59,22 @@ jobs:
           # macOS Intel
           - target: x86_64-apple-darwin
             os: macos-latest
-            asset_name: apliarte-link-x86_64-apple-darwin
+            asset_name: apliarte-link-macos-x64
 
           # macOS Apple Silicon
           - target: aarch64-apple-darwin
             os: macos-latest
-            asset_name: apliarte-link-aarch64-apple-darwin
+            asset_name: apliarte-link-macos-arm64
 
           # Linux x64
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
-            asset_name: apliarte-link-x86_64-unknown-linux-gnu
+            asset_name: apliarte-link-linux-x64
 
           # Windows x64
           - target: x86_64-pc-windows-msvc
             os: windows-latest
-            asset_name: apliarte-link-x86_64-pc-windows-msvc.exe
+            asset_name: apliarte-link-windows-x64.exe
 
     steps:
       - name: Checkout código
@@ -49,36 +88,51 @@ jobs:
       - name: Cache de dependencias Rust
         uses: Swatinem/rust-cache@v2
 
-      - name: Compilar en release
+      - name: Compilar binario release
         run: cargo build --release --target ${{ matrix.target }}
 
-      # En Linux también generamos .deb para facilitar la instalación
+      # En Linux también generamos .deb para distribución Debian/Ubuntu
       - name: Generar .deb (solo Linux)
         if: matrix.os == 'ubuntu-latest'
         run: |
           cargo install cargo-deb
           cargo deb --target ${{ matrix.target }}
 
-      - name: Preparar binario para subir
+      - name: Subir binario directamente a GitHub Release
         shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            cp target/${{ matrix.target }}/release/${{ env.BIN_NAME }}.exe ${{ matrix.asset_name }}
+            cp "target/${{ matrix.target }}/release/${{ env.BIN_NAME }}.exe" "${{ matrix.asset_name }}"
           else
-            cp target/${{ matrix.target }}/release/${{ env.BIN_NAME }} ${{ matrix.asset_name }}
+            cp "target/${{ matrix.target }}/release/${{ env.BIN_NAME }}" "${{ matrix.asset_name }}"
           fi
 
-      - name: Subir binario como artefacto
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.asset_name }}
-          path: ${{ matrix.asset_name }}
+          echo "Subiendo ${{ matrix.asset_name }} a Release ${{ github.ref_name }}..."
+          gh release upload "${{ github.ref_name }}" "${{ matrix.asset_name }}" \
+            --repo "${{ github.repository }}" \
+            --clobber
+          echo "✅ ${{ matrix.asset_name }} subido correctamente"
+
+          # Si se generó paquete .deb en Linux, subirlo también
+          if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
+            DEB_FILE=$(find target/${{ matrix.target }}/debian -name "*.deb" 2>/dev/null | head -n 1)
+            if [ -n "$DEB_FILE" ] && [ -f "$DEB_FILE" ]; then
+              echo "Subiendo paquete debian $DEB_FILE..."
+              gh release upload "${{ github.ref_name }}" "$DEB_FILE" \
+                --repo "${{ github.repository }}" \
+                --clobber
+              echo "✅ Paquete .deb subido correctamente"
+            fi
+          fi
 
   # ─────────────────────────────────────────────────────────────────────────────
-  # App macOS completa: Flutter UI + daemon Rust embebido en el .app
+  # 3. App macOS completa: Flutter UI + daemon Rust embebido en el .app
   # ─────────────────────────────────────────────────────────────────────────────
   build-macos-app:
     name: App macOS (Flutter + Rust universal)
+    needs: create-draft
     runs-on: macos-latest
 
     steps:
@@ -142,17 +196,22 @@ jobs:
           zip -r "$GITHUB_WORKSPACE/apliarte-link-macos-app.zip" "apliarte_link.app"
           echo "✅ ZIP generado"
 
-      - name: Subir app como artefacto
-        uses: actions/upload-artifact@v4
-        with:
-          name: apliarte-link-macos-app
-          path: apliarte-link-macos-app.zip
+      - name: Subir app macOS directamente a GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Subiendo apliarte-link-macos-app.zip a Release ${{ github.ref_name }}..."
+          gh release upload "${{ github.ref_name }}" "$GITHUB_WORKSPACE/apliarte-link-macos-app.zip" \
+            --repo "${{ github.repository }}" \
+            --clobber
+          echo "✅ apliarte-link-macos-app.zip subido correctamente"
 
   # ─────────────────────────────────────────────────────────────────────────────
-  # App Windows completa: Flutter UI + daemon Rust embebido
+  # 4. App Windows completa: Flutter UI + daemon Rust embebido
   # ─────────────────────────────────────────────────────────────────────────────
   build-windows-app:
     name: App Windows (Flutter + Rust)
+    needs: create-draft
     runs-on: windows-latest
 
     steps:
@@ -197,17 +256,23 @@ jobs:
           Compress-Archive -Path "apps/apliarte_link/build/windows/x64/runner/Release/*" -DestinationPath "apliarte-link-windows-app.zip"
           Write-Host "✅ ZIP generado"
 
-      - name: Subir app Windows como artefacto
-        uses: actions/upload-artifact@v4
-        with:
-          name: apliarte-link-windows-app
-          path: apliarte-link-windows-app.zip
+      - name: Subir app Windows directamente a GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Subiendo apliarte-link-windows-app.zip a Release ${{ github.ref_name }}..."
+          gh release upload "${{ github.ref_name }}" apliarte-link-windows-app.zip \
+            --repo "${{ github.repository }}" \
+            --clobber
+          echo "✅ apliarte-link-windows-app.zip subido correctamente"
 
   # ─────────────────────────────────────────────────────────────────────────────
-  # App Linux completa: Flutter UI + daemon Rust embebido (.deb / tar.gz)
+  # 5. App Linux completa: Flutter UI + daemon Rust embebido (.tar.gz)
   # ─────────────────────────────────────────────────────────────────────────────
   build-linux-app:
     name: App Linux (Flutter + Rust)
+    needs: create-draft
     runs-on: ubuntu-latest
 
     steps:
@@ -258,81 +323,44 @@ jobs:
           tar -czvf apliarte-link-linux-app.tar.gz -C apps/apliarte_link/build/linux/x64/release bundle
           echo "✅ Tar.gz generado"
 
-      - name: Subir app Linux como artefacto
-        uses: actions/upload-artifact@v4
-        with:
-          name: apliarte-link-linux-app
-          path: apliarte-link-linux-app.tar.gz
-
-  release:
-    name: Crear Release en GitHub
-    needs: [build-macos-app, build-windows-app, build-linux-app]
-    if: needs.build-macos-app.result == 'success' && needs.build-windows-app.result == 'success' && needs.build-linux-app.result == 'success'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
-    steps:
-      - name: Descargar todos los artefactos
-        uses: actions/download-artifact@v4
-
-      - name: Renombrar binarios con nombres limpios
+      - name: Subir app Linux directamente a GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          mv apliarte-link-aarch64-apple-darwin/apliarte-link-aarch64-apple-darwin       apliarte-link-macos-arm64
-          mv apliarte-link-x86_64-apple-darwin/apliarte-link-x86_64-apple-darwin         apliarte-link-macos-x64
-          if [ -f "apliarte-link-x86_64-unknown-linux-gnu/apliarte-link-x86_64-unknown-linux-gnu" ]; then
-            mv apliarte-link-x86_64-unknown-linux-gnu/apliarte-link-x86_64-unknown-linux-gnu apliarte-link-linux-x64
-            echo "LINUX_BIN=apliarte-link-linux-x64" >> $GITHUB_ENV
-          else
-            echo "LINUX_BIN=" >> $GITHUB_ENV
-          fi
-          mv "apliarte-link-x86_64-pc-windows-msvc.exe/apliarte-link-x86_64-pc-windows-msvc.exe" apliarte-link-windows-x64.exe
-          # Apps completas
-          if [ -f "apliarte-link-macos-app/apliarte-link-macos-app.zip" ]; then
-            mv apliarte-link-macos-app/apliarte-link-macos-app.zip apliarte-link-macos-app.zip
-            echo "MACOS_APP=apliarte-link-macos-app.zip" >> $GITHUB_ENV
-          else
-            echo "MACOS_APP=" >> $GITHUB_ENV
-          fi
-          if [ -f "apliarte-link-windows-app/apliarte-link-windows-app.zip" ]; then
-            mv apliarte-link-windows-app/apliarte-link-windows-app.zip apliarte-link-windows-app.zip
-            echo "WINDOWS_APP=apliarte-link-windows-app.zip" >> $GITHUB_ENV
-          else
-            echo "WINDOWS_APP=" >> $GITHUB_ENV
-          fi
-          if [ -f "apliarte-link-linux-app/apliarte-link-linux-app.tar.gz" ]; then
-            mv apliarte-link-linux-app/apliarte-link-linux-app.tar.gz apliarte-link-linux-app.tar.gz
-            echo "LINUX_APP=apliarte-link-linux-app.tar.gz" >> $GITHUB_ENV
-          else
-            echo "LINUX_APP=" >> $GITHUB_ENV
-          fi
+          echo "Subiendo apliarte-link-linux-app.tar.gz a Release ${{ github.ref_name }}..."
+          gh release upload "${{ github.ref_name }}" apliarte-link-linux-app.tar.gz \
+            --repo "${{ github.repository }}" \
+            --clobber
+          echo "✅ apliarte-link-linux-app.tar.gz subido correctamente"
 
-      - name: Crear o actualizar GitHub Release
+  # ─────────────────────────────────────────────────────────────────────────────
+  # 6. Publicar Release Oficial (Desmarcar Draft)
+  # ─────────────────────────────────────────────────────────────────────────────
+  publish:
+    name: Publicar Release Oficial
+    needs: [create-draft, build, build-macos-app, build-windows-app, build-linux-app]
+    if: success()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Quitar estado Draft del Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="${{ github.ref_name }}"
-          PRERELEASE=""
-          if [[ "$TAG" == *alpha* ]] || [[ "$TAG" == *beta* ]]; then
-            PRERELEASE="--prerelease"
-          fi
-          # Binarios y apps
-          FILES="apliarte-link-macos-arm64 apliarte-link-macos-x64 apliarte-link-windows-x64.exe"
-          if [ -n "$LINUX_BIN" ]; then FILES="$LINUX_BIN $FILES"; fi
-          if [ -n "$MACOS_APP" ]; then FILES="$MACOS_APP $FILES"; fi
-          if [ -n "$WINDOWS_APP" ]; then FILES="$WINDOWS_APP $FILES"; fi
-          if [ -n "$LINUX_APP" ]; then FILES="$LINUX_APP $FILES"; fi
-          gh release delete "$TAG" --repo "${{ github.repository }}" --yes 2>/dev/null || true
-          gh release create "$TAG" \
-            $FILES \
-            --repo "${{ github.repository }}" \
-            --title "$TAG" \
-            --generate-notes \
-            $PRERELEASE
+          echo "Publicando release oficial $TAG..."
+          gh release edit "$TAG" --repo "${{ github.repository }}" --draft=false
+          echo "✅ Release $TAG publicado con éxito y disponible públicamente."
 
+  # ─────────────────────────────────────────────────────────────────────────────
+  # 7. Deploy web a Firebase Hosting
+  # ─────────────────────────────────────────────────────────────────────────────
   deploy-firebase:
     name: Deploy web a Firebase Hosting
-    needs: release
+    needs: publish
     runs-on: ubuntu-latest
 
     steps:
@@ -348,4 +376,3 @@ jobs:
           GOOGLE_APPLICATION_CREDENTIALS=/tmp/firebase-key.json firebase deploy --only hosting --project apliarte-link
           rm /tmp/firebase-key.json
         working-directory: web
-
