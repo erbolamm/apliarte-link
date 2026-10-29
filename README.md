@@ -2,7 +2,7 @@
 
 > **KVM virtual por red local** — Comparte un teclado y ratón entre Mac y Windows sin cables.
 
-🌐 **[apliarte-link.web.app](https://apliarte-link.web.app)**
+🌐 **[erbolamm.github.io/apliarte-link](https://erbolamm.github.io/apliarte-link/)**
 
 [![Estado](https://img.shields.io/badge/estado-MVP%20macOS%20%2B%20Windows-orange)](#estado-actual)
 [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-blue)](#plataformas)
