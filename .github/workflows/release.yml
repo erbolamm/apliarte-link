@@ -51,7 +51,6 @@ jobs:
 
       - name: Compilar en release
         run: cargo build --release --target ${{ matrix.target }}
-        continue-on-error: ${{ matrix.os == 'ubuntu-latest' }}
 
       # En Linux también generamos .deb para facilitar la instalación
       - name: Generar .deb (solo Linux)
@@ -204,10 +203,71 @@ jobs:
           name: apliarte-link-windows-app
           path: apliarte-link-windows-app.zip
 
+  # ─────────────────────────────────────────────────────────────────────────────
+  # App Linux completa: Flutter UI + daemon Rust embebido (.deb / tar.gz)
+  # ─────────────────────────────────────────────────────────────────────────────
+  build-linux-app:
+    name: App Linux (Flutter + Rust)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Instalar dependencias del sistema para Linux
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev
+
+      - name: Instalar Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-gnu
+
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+
+      - name: Compilar daemon Rust para Linux
+        run: cargo build --release --target x86_64-unknown-linux-gnu
+
+      - name: Instalar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Flutter pub get
+        run: flutter pub get
+        working-directory: apps/apliarte_link
+
+      - name: Compilar app Flutter Linux
+        run: flutter build linux --release
+        working-directory: apps/apliarte_link
+
+      - name: Embeber daemon en la carpeta del bundle Linux
+        shell: bash
+        run: |
+          BUNDLE_DIR="apps/apliarte_link/build/linux/x64/release/bundle"
+          cp "target/x86_64-unknown-linux-gnu/release/${{ env.BIN_NAME }}" "$BUNDLE_DIR/${{ env.BIN_NAME }}"
+          chmod +x "$BUNDLE_DIR/${{ env.BIN_NAME }}"
+          echo "✅ Daemon embebido en $BUNDLE_DIR"
+          ls -lh "$BUNDLE_DIR/"
+
+      - name: Empaquetar bundle en tar.gz
+        shell: bash
+        run: |
+          tar -czvf apliarte-link-linux-app.tar.gz -C apps/apliarte_link/build/linux/x64/release bundle
+          echo "✅ Tar.gz generado"
+
+      - name: Subir app Linux como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: apliarte-link-linux-app
+          path: apliarte-link-linux-app.tar.gz
+
   release:
     name: Crear Release en GitHub
-    needs: [build-macos-app, build-windows-app]
-    if: needs.build-macos-app.result == 'success' && needs.build-windows-app.result == 'success'
+    needs: [build-macos-app, build-windows-app, build-linux-app]
+    if: needs.build-macos-app.result == 'success' && needs.build-windows-app.result == 'success' && needs.build-linux-app.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -225,23 +285,26 @@ jobs:
             echo "LINUX_BIN=apliarte-link-linux-x64" >> $GITHUB_ENV
           else
             echo "LINUX_BIN=" >> $GITHUB_ENV
-            echo "⚠️ Binario Linux no disponible (falló el build)"
           fi
           mv "apliarte-link-x86_64-pc-windows-msvc.exe/apliarte-link-x86_64-pc-windows-msvc.exe" apliarte-link-windows-x64.exe
-          # Apps completas — opcionales, solo si sus jobs terminaron bien
+          # Apps completas
           if [ -f "apliarte-link-macos-app/apliarte-link-macos-app.zip" ]; then
             mv apliarte-link-macos-app/apliarte-link-macos-app.zip apliarte-link-macos-app.zip
             echo "MACOS_APP=apliarte-link-macos-app.zip" >> $GITHUB_ENV
           else
             echo "MACOS_APP=" >> $GITHUB_ENV
-            echo "⚠️ App macOS no disponible en este release"
           fi
           if [ -f "apliarte-link-windows-app/apliarte-link-windows-app.zip" ]; then
             mv apliarte-link-windows-app/apliarte-link-windows-app.zip apliarte-link-windows-app.zip
             echo "WINDOWS_APP=apliarte-link-windows-app.zip" >> $GITHUB_ENV
           else
             echo "WINDOWS_APP=" >> $GITHUB_ENV
-            echo "⚠️ App Windows no disponible en este release"
+          fi
+          if [ -f "apliarte-link-linux-app/apliarte-link-linux-app.tar.gz" ]; then
+            mv apliarte-link-linux-app/apliarte-link-linux-app.tar.gz apliarte-link-linux-app.tar.gz
+            echo "LINUX_APP=apliarte-link-linux-app.tar.gz" >> $GITHUB_ENV
+          else
+            echo "LINUX_APP=" >> $GITHUB_ENV
           fi
 
       - name: Crear o actualizar GitHub Release
@@ -253,12 +316,12 @@ jobs:
           if [[ "$TAG" == *alpha* ]] || [[ "$TAG" == *beta* ]]; then
             PRERELEASE="--prerelease"
           fi
-          # Binarios crudos siempre presentes (Linux opcional)
+          # Binarios y apps
           FILES="apliarte-link-macos-arm64 apliarte-link-macos-x64 apliarte-link-windows-x64.exe"
           if [ -n "$LINUX_BIN" ]; then FILES="$LINUX_BIN $FILES"; fi
-          # Apps completas si están disponibles
           if [ -n "$MACOS_APP" ]; then FILES="$MACOS_APP $FILES"; fi
           if [ -n "$WINDOWS_APP" ]; then FILES="$WINDOWS_APP $FILES"; fi
+          if [ -n "$LINUX_APP" ]; then FILES="$LINUX_APP $FILES"; fi
           gh release delete "$TAG" --repo "${{ github.repository }}" --yes 2>/dev/null || true
           gh release create "$TAG" \
             $FILES \
