@@ -1,0 +1,18 @@
+[
+  {
+    "id": "prop-apliarte-link-20261029-ci-releases-pages",
+    "proyecto": "apliarte-link",
+    "autor": "or-apliarte-link",
+    "fecha": "2026-10-29T15:46:00.000Z",
+    "titulo": "Publicación directa en GitHub Releases y Landing en GitHub Pages sin cuota de storage ni Firebase",
+    "tipo": "leccion",
+    "archivoDestino": "roles/orquestador/memoria/lecciones.md",
+    "estado": "pendiente",
+    "que": "Arquitectura de CI/CD para proyectos multiplataforma open source en GitHub: subida directa de instaladores a GitHub Releases (gh release upload --clobber) eliminando actions/upload-artifact intermedio, y despliegue automático de la landing en GitHub Pages vía actions/deploy-pages.",
+    "porque": "El uso de upload-artifact/download-artifact en matrices multiplataforma satura de inmediato la cuota de 500 MB de storage en cuentas gratuitas de GitHub (ActionFailed: Artifact storage quota hit). Además, acoplar Firebase Hosting al workflow de release bloquea la publicación de binarios si fallan tokens o service accounts de Google Cloud.",
+    "donde": ".github/workflows/release.yml, .github/workflows/deploy-pages.yml y PASOS-PARA-PUBLICAR.md",
+    "aprendido": "1) En proyectos multiplataforma (macOS, Windows, Linux), los workers deben subir sus instaladores directamente a la Release oficial de GitHub mediante gh release upload, evitando almacenar artefactos temporales en Actions. 2) La landing web debe desplegarse en GitHub Pages de forma desacoplada para mantener el proyecto 100% autónomo, gratuito e inmune a errores de APIs o cuotas externas.",
+    "diff": "+ .github/workflows/deploy-pages.yml\n- deploy-firebase job en release.yml\n+ gh release upload --clobber directo",
+    "notas": "Probado y verificado en la release v0.2.7 de apliarte-link."
+  }
+]

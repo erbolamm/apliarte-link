@@ -1,0 +1,16 @@
+{
+  "version": "1.5.5",
+  "sincronizado_el": "2026-10-29T05:58:06.504972+00:00",
+  "origen_soberano": "/Users/apliarte/repos/orquestador-apliarte",
+  "hashes_gestionados": {
+    "aprendizajes/README.md": "d6da063042cf20d43d55a183869f3b556f6312ec104a492af5499f67dc1bc0c2",
+    "tareas/README.md": "c94a44524ed07bd16552cda7f751d7a6b572c776a54edac7d5a3556642f89488",
+    "roles/orquestador/ARRANQUE.md": "cf9858467dd22b1e5dfa4594c2086f23e75cd152ccadf30362624f1032e4c6f5",
+    "roles/orquestador/perfil.md": "cd0151fb28323457e3029d0c8a3618ef3a322943e9c8e88f81a29220bdd5f949",
+    "roles/orquestador/ACCESO-CENTRAL.md": "bee250f0aadf94c4f412900cfdb2c82b374399e77a75de9ba4d2a26d9e629d2f",
+    "roles/orquestador/COMUNICACION-APLICHAT.md": "f184acc9755d69ff207f7c4b695336831fea52dc6c797af8d43515dc1c087e6a",
+    "roles/orquestador/AUDITORIA-ARGON.md": "8516abb6f5b7aaceb3a3e24ec6c1af4cac9829cf3917cac82e4f387969e933f0",
+    "roles/mesa-redonda/ARRANQUE.md": "19936e4c549d970a08e3dc0bda9e9a335952f47d2324b02f4f1b13d5a1fcc81e",
+    "roles/mesa-redonda/perfil.md": "26a899a276e7809a623e958f2e1d61e862a57a5112a83e199a25cdfb344f16df"
+  }
+}
