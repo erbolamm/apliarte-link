@@ -100,6 +100,33 @@ fn inject_sync(event: InputEvent) -> Result<()> {
     Ok(())
 }
 
+#[link(name = "ApplicationServices", kind = "framework")]
+extern "C" {
+    fn AXIsProcessTrustedWithOptions(options: core_foundation::dictionary::CFDictionaryRef) -> bool;
+}
+
+pub fn check_and_prompt_accessibility() -> bool {
+    use core_foundation::base::TCFType;
+    use core_foundation::boolean::CFBoolean;
+    use core_foundation::dictionary::CFDictionary;
+    use core_foundation::string::CFString;
+
+    unsafe {
+        let key = CFString::new("AXTrustedCheckOptionPrompt");
+        let value = CFBoolean::true_value();
+        let options = CFDictionary::from_CFType_pairs(&[(key.as_CFType(), value.as_CFType())]);
+        let trusted = AXIsProcessTrustedWithOptions(options.as_concrete_TypeRef());
+        if !trusted {
+            tracing::warn!(
+                "⚠️ Permiso de Accesibilidad no concedido en macOS. Se solicitó el cuadro de diálogo del sistema (TCC)."
+            );
+        } else {
+            tracing::info!("✅ Permiso de Accesibilidad concedido en macOS.");
+        }
+        trusted
+    }
+}
+
 pub fn start_switch_listener(
     cfg: Arc<Mutex<AppConfig>>,
     peers: PeerList,
@@ -107,6 +134,7 @@ pub fn start_switch_listener(
     control_state: ControlState,
     conn_mgr: ConnectionManager,
 ) -> Result<()> {
+    check_and_prompt_accessibility();
     let rt_handle = tokio::runtime::Handle::current();
     std::thread::Builder::new()
         .name("apliarte-link-switch-macos".to_string())
