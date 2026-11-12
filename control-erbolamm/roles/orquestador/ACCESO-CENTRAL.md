@@ -13,9 +13,9 @@ Este documento fija la politica y garantias de acceso al repositorio central del
   - `skills/`: habilidades reutilizables y automatizaciones.
   - `AGENTS.md`: protocolo canonico general y acuerdos del ecosistema.
 
-## 2. Prohibición Absoluta de Modificación y Soberanía Estricta
-- Queda **terminantemente prohibido** para cualquier rol o agente que opere en este repositorio escribir, editar, renombrar, borrar o comitear cualquier archivo en la central (`${ERBOLAMM_CENTRAL:-$HOME/trabajo/erbolamm-trabajo}`) o en cualquier otro repositorio ajeno.
-- **Soberanía estricta entre repositorios**: Toda coordinación entre repositorios se realiza exclusivamente mediante prompts y tareas. Ni siquiera `or-erbolamm-trabajo` podrá editar directamente el código de un proyecto cliente que ya cuente con su propio orquestador local (`or-<proyecto>`).
+## 2. Prohibición Absoluta de Modificación, Compilación y Soberanía Estricta Universal
+- Queda **terminantemente prohibido** para cualquier rol o agente que opere en este repositorio escribir, editar, renombrar, borrar, compilar binarios (`flutter build`, `dart test`, `cargo build`, etc.) o comitear cualquier archivo en la central (`${ERBOLAMM_CENTRAL:-$HOME/trabajo/erbolamm-trabajo}`) o en cualquier otro repositorio satélite ajeno.
+- **Soberanía estricta y universal entre repositorios**: Toda coordinación entre repositorios se realiza exclusivamente mediante prompts y tareas. Ningún orquestador o agente (incluyendo `or-erbolamm-trabajo` o cualquier `or-<proyecto>`) podrá editar directamente el código ni compilar binarios de otro repositorio satélite. Toda acción técnica se solicita al orquestador soberano del repositorio para que la ejecute localmente.
 - **Emisión y escalado canónico de propuestas locales**:
   Si este orquestador local detecta en su entorno (`control-erbolamm/aprendizajes/`) una nueva lección, patrón técnico o mejora que deba compartirse con el ecosistema:
   1. La emite formalmente a `control-erbolamm/aprendizajes/propuestas.json`.
