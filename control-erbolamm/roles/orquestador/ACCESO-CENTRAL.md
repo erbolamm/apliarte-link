@@ -1,16 +1,17 @@
-# Normativa de Acceso a la Central (erbolamm-trabajo)
+# Normativa de Acceso al Motor de la Oficina (erbolamm-trabajo)
 
-Este documento fija la politica y garantias de acceso al repositorio central del ecosistema ErBolamm para el Orquestador Local y los agentes de este repositorio.
+Este documento fija la politica y garantias de acceso al motor de la oficina (repositorio central `erbolamm-trabajo`) para el Orquestador Local y los agentes de este repositorio.
 
 ## 1. Acceso Universal de Solo Lectura
-- Cualquier Orquestador Local o trabajador de este repositorio tiene **acceso libre y completo en SOLO LECTURA** a la central:
+- Cualquier Orquestador Local o trabajador de este repositorio tiene **acceso libre y completo en SOLO LECTURA** al motor de la oficina:
   `${ERBOLAMM_CENTRAL:-$HOME/trabajo/erbolamm-trabajo}`
 - Proposito: Consultar en cualquier momento y sin restricciones:
   - `TECH_CATALOG.md`: versiones oficiales de dependencias, frameworks y upstreams.
   - `INBOX.md`: reglas de oro y prioridades globales del ecosistema.
   - `roles/orquestador/memoria/lecciones.md` (en central) y `memoria/lecciones.md` (en `asistente-apliarte`): lecciones aprendidas canónicas del ecosistema, para verificar y sincronizar al arranque de cada sesión o proyecto.
   - `categorias/`: recetas, ingredientes tecnicos y patrones arquitectonicos.
-  - `skills/`: habilidades reutilizables y automatizaciones.
+  - `skills/`: habilidades reutilizables y automatizaciones (especialmente `skills/desarrollo-doble-dispositivo/SKILL.md` para modo desarrollo y modo autónomo).
+  - `control-erbolamm/dispositivos.json`: catálogo canónico de dispositivos físicos autorizados para movilidad y desarrollo (iPhone 15, iPhone 12, Pixel, Infinix Note 30 Pro).
   - `AGENTS.md`: protocolo canonico general y acuerdos del ecosistema.
 
 ## 2. Prohibición Absoluta de Modificación, Compilación y Soberanía Estricta Universal

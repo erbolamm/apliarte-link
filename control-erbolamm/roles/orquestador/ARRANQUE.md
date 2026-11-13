@@ -15,7 +15,7 @@ Cada vez que Javier ordene abrir este proyecto, el orquestador aplica estrictame
 ## 1. Verificacion de Directorio y Contexto
 - Comprobar que el directorio de trabajo (`pwd`) coincide con la raiz de este repositorio.
 - Comprobar el estado de Git (`git status`) asegurando que el arbol este limpio o identificando cambios en curso ajenos a la tarea, los cuales se respetaran escrupulosamente.
-- **Lectura Obligatoria de la Ficha Técnica Soberana (Cláusula Cuarta)**: Leer obligatoriamente `control-erbolamm/FICHA_TECNICA.md` al arrancar y tras rehidratación `/new` para asumir la arquitectura, gestor de estado, paquetes o patrones prohibidos, comandos exactos de prueba y módulos intocables del proyecto.
+- **Autodescubrimiento y Lectura de la Ficha Técnica Soberana (Cláusula Cuarta)**: Al arrancar y tras rehidratación `/new`, ejecutar `python3 "${ORQUESTADOR_HOME:-$HOME/repos/orquestador-apliarte}/bin/ficha_drift.py" status .`. Si devuelve `vigente`, leer `control-erbolamm/FICHA_TECNICA.md` tal cual y no auditar. Si devuelve `sin-sellar`, `deriva` o `sin-ficha`, ejecutar una sola vez el protocolo de [`AUTODESCUBRIMIENTO-FICHA.md`](./AUTODESCUBRIMIENTO-FICHA.md) antes de leerla. La ficha aporta arquitectura, gestor de estado, comandos exactos de prueba, oficio del sector y módulos intocables.
 
 ## 2. Lectura de Identidad y Reglas
 - **Delegación Canónica en Subagente Flash Medium**: Para no sobrecargar la ventana de contexto del orquestador y garantizar máxima precisión técnica al menor coste de razonamiento, la lectura y asimilación de `perfil.md`, `ACCESO-CENTRAL.md`, `AUDITORIA-ARGON.md`, `lecciones.md`, `MEMORIA.md` e `INBOX.md` se delega obligatoriamente en un subagente en modelo Gemini 3.8 Flash Medium (`Model: "flash"`).
@@ -80,6 +80,7 @@ Cada vez que Javier ordene abrir este proyecto, el orquestador aplica estrictame
     1. Debe volcarla de forma estructurada a su archivo soberano `control-erbolamm/aprendizajes/propuestas.json` con los campos: `id`, `proyecto`, `autor`, `fecha`, `titulo`, `tipo` (`plantilla` | `leccion` | `regla`), `que`, `porque`, `donde`, `aprendido`, `diff` y `estado: "pendiente"`.
     2. Comprobar que la propuesta aparece consultando la API de la Oficina (`http://127.0.0.1:8791/api/propuestas?proyecto=<nombre>`) sin inventar métodos de envío externos (la Oficina lee directamente el archivo).
     3. Notificar a Javier en el reporte de cierre que la propuesta ha quedado registrada y disponible en `:8791/vista/propuestas`. Si la Oficina no estuviera accesible en ese momento, reportar «registrada localmente, verificación en Oficina pendiente».
+- **Relevo de Motor bajo Petición de Javier**: Cuando Javier pida cambiar de motor o relevar la sesión, seguir sin desviarse [`RELEVO-MOTOR.md`](./RELEVO-MOTOR.md): detector en vivo (`runtime_config.py engines --json`), lista real, una sola pregunta, traspaso a memoria, pane viejo renombrado y nunca cerrado.
 - **Repositorio Soberano de Plantilla (`orquestador-apliarte`)**:
   La fuente de verdad canónica de esta estructura y sus contratos reside en `https://github.com/erbolamm/orquestador-apliarte` (local: `${ORQUESTADOR_HOME:-$HOME/repos/orquestador-apliarte}`).
 

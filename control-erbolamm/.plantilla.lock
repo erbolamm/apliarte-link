@@ -1,20 +1,23 @@
 {
-  "version": "1.5.19",
-  "sincronizado_el": "2026-11-10T16:27:36.174243+00:00",
-  "origen_soberano": "/Users/apliarte/repos/orquestador-apliarte",
+  "version": "1.5.21",
+  "sincronizado_el": "2026-11-13T16:29:58.291096+00:00",
+  "origen_soberano": "/Users/apliarte/trabajo/orquestador-apliarte",
   "hashes_gestionados": {
     "aprendizajes/README.md": "d6da063042cf20d43d55a183869f3b556f6312ec104a492af5499f67dc1bc0c2",
     "tareas/README.md": "c94a44524ed07bd16552cda7f751d7a6b572c776a54edac7d5a3556642f89488",
-    "roles/orquestador/ARRANQUE.md": "23f3cd6cb98ca5a9f3ccc441fdde572cd53d234985989ab9a6602b8e14a78328",
+    "roles/orquestador/ARRANQUE.md": "b5d227ddaef369c5f410ba9f08cd12b4ca3dbd6852515e93d373dc1c1ce796ba",
     "roles/orquestador/perfil.md": "af7082e1ccbf041c5b18b680784eeb3b8668f0109da4d1d4282625e90301dcd7",
-    "roles/orquestador/ACCESO-CENTRAL.md": "e34e16c9493e98fefa2e87841d31f623600f5ae33554d10b1a1097ffcc88ad44",
+    "roles/orquestador/ACCESO-CENTRAL.md": "3cf0cac4f1ae56b20b8d49a9e5b829783c606dac1a8c1293f9737ba9d8b34f32",
     "roles/orquestador/COMUNICACION-APLICHAT.md": "6eb4099b1f330aa6acd06a665269ea68921b1450fa4bd4fc6ad97c4112ce07d1",
     "roles/orquestador/AUDITORIA-ARGON.md": "8516abb6f5b7aaceb3a3e24ec6c1af4cac9829cf3917cac82e4f387969e933f0",
+    "roles/orquestador/AUTODESCUBRIMIENTO-FICHA.md": "ba1fb4ce4aa9d3ddeaaeb1922b897000719b170d6d07a02e12db29179632d5c9",
+    "roles/orquestador/RELEVO-MOTOR.md": "b55f7768988066c5cf6133bdd216ba069f682636ebdebad7c64db25ab34cc615",
     "roles/mesa-redonda/ARRANQUE.md": "19936e4c549d970a08e3dc0bda9e9a335952f47d2324b02f4f1b13d5a1fcc81e",
     "roles/mesa-redonda/perfil.md": "26a899a276e7809a623e958f2e1d61e862a57a5112a83e199a25cdfb344f16df",
     "facturacion/DIRECTIVA_FACTURACION_AUTONOMO.md": "be3e3200dfde7f99c103fd59c56e5160d43b125b902135ece2a76b361fff91fb",
     "ingredientes/plantilla/ios/Runner/Info.plist": "6779671756339e7e1a6209c84b6d0c179a719d56622a32f2c5b0cd5d7ab9b7f1",
     "seguridad/data_safety_export.csv": "34bf30b39c7bf1c723ea11bb8d5008d12148be4e66d202a9c07e45464637aae9",
-    "ios/Runner/Info.plist": "3c50d95a29aaf820ce81bacfee80f7eb2c66a0c293f8464ea59ebcc64c2aa4e9"
+    "ios/Runner/Info.plist": "3c50d95a29aaf820ce81bacfee80f7eb2c66a0c293f8464ea59ebcc64c2aa4e9",
+    "dispositivos.json": "216a90318e52fd3e7d545bfde8ef2efc362658b423e95c120c1ad9e59c94be7d"
   }
 }
